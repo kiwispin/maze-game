@@ -1,182 +1,70 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Maze Flow</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        :root {
-            --primary: #007AFF;
-            --danger: #FF3B30;
-            --success: #34C759;
-            --surface: rgba(255, 255, 255, 0.85);
-            --glass-border: rgba(255, 255, 255, 0.5);
-            --shadow-sm: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
-            --shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-        }
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
         body {
-            overscroll-behavior: none;
-            touch-action: none;
-            user-select: none;
+            font-family: 'Inter', sans-serif;
+            background-color: #F5F5F7;
+            /* Apple-like light gray */
             overflow: hidden;
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-            background: #F2F2F7; /* Apple system gray */
-            color: #1D1D1F;
-        }
-
-        /* Background Mesh Gradient */
-        .bg-mesh {
-            position: absolute;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: radial-gradient(circle at 0% 0%, #e0e7ff 0%, transparent 50%), 
-                        radial-gradient(circle at 100% 100%, #ffe4e6 0%, transparent 50%);
-            z-index: -1;
-        }
-
-        #game-container {
-            position: relative;
-            width: 100vw;
-            height: 100vh;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-        }
-
-        canvas {
-            border-radius: 24px;
-            background: white;
-            box-shadow: var(--shadow-lg);
-            cursor: crosshair;
             touch-action: none;
-            transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            -webkit-user-select: none;
+            user-select: none;
         }
 
-        /* Glassmorphism Controls */
+        /* Glassmorphism UI */
         .glass-panel {
-            background: var(--surface);
+            background: rgba(255, 255, 255, 0.85);
             backdrop-filter: blur(20px);
             -webkit-backdrop-filter: blur(20px);
-            border: 1px solid var(--glass-border);
-            box-shadow: var(--shadow-sm);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.05);
+        }
+
+        .top-bar {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 80px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 24px;
+            z-index: 50;
+        }
+
+        .top-pill {
+            padding: 8px 16px;
+            border-radius: 999px;
+            font-weight: 600;
+            color: #1D1D1F;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 15px;
         }
 
         .controls {
-            position: fixed;
+            position: absolute;
             bottom: 40px;
             left: 50%;
             transform: translateX(-50%);
             display: flex;
             gap: 16px;
-            z-index: 50;
             padding: 12px 24px;
-            border-radius: 100px;
-            align-items: center;
-            transition: all 0.3s ease;
-        }
-
-        /* Top Bar */
-        .top-bar {
-            position: fixed;
-            top: 20px;
-            left: 0;
-            right: 0;
-            display: flex;
-            justify-content: space-between;
-            padding: 0 24px;
+            border-radius: 24px;
             z-index: 50;
-            pointer-events: none; /* Let clicks pass through to canvas */
-        }
-        
-        .top-pill {
-            pointer-events: auto;
-            border-radius: 100px;
-            padding: 8px 16px;
-            display: flex;
             align-items: center;
-            gap: 8px;
-            font-weight: 600;
-            font-size: 14px;
         }
 
-        /* Custom Dropdown */
-        .dropdown-container {
-            position: relative;
-            pointer-events: auto;
-        }
-
-        .dropdown-trigger {
-            cursor: pointer;
-            padding-right: 12px;
-            transition: background 0.2s;
-        }
-        
-        .dropdown-trigger:active {
-            background: rgba(255,255,255,0.5);
-        }
-
-        .dropdown-menu {
-            position: absolute;
-            top: 110%;
-            right: 0;
-            width: 160px;
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(24px);
-            -webkit-backdrop-filter: blur(24px);
-            border-radius: 16px;
-            padding: 6px;
-            box-shadow: var(--shadow-lg);
-            border: 1px solid var(--glass-border);
-            
-            /* Animation States */
-            opacity: 0;
-            transform: scale(0.95) translateY(-10px);
-            transform-origin: top right;
-            pointer-events: none;
-            transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
-        }
-
-        .dropdown-menu.show {
-            opacity: 1;
-            transform: scale(1) translateY(0);
-            pointer-events: auto;
-        }
-
-        .dropdown-item {
-            padding: 10px 12px;
-            border-radius: 10px;
-            font-size: 14px;
-            font-weight: 500;
-            color: #1D1D1F;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            transition: background 0.1s;
-        }
-
-        .dropdown-item:hover {
-            background: rgba(0,0,0,0.05);
-        }
-
-        .dropdown-item.active {
-            color: var(--primary);
-            background: rgba(0, 122, 255, 0.1);
-            font-weight: 600;
-        }
-
-        .chevron {
-            transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-        }
-        .dropdown-menu.show ~ .dropdown-trigger .chevron {
-            transform: rotate(180deg);
-        }
-
-
-        /* Buttons */
         .btn-icon {
             width: 44px;
             height: 44px;
@@ -184,84 +72,80 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            background: white;
+            border: none;
+            background: transparent;
             color: #1D1D1F;
-            border: 1px solid rgba(0,0,0,0.05);
-            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
             cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-icon:hover {
+            background: rgba(0, 0, 0, 0.05);
+            transform: scale(1.05);
         }
 
         .btn-icon:active {
-            transform: scale(0.92);
-            background: #f5f5f5;
+            transform: scale(0.95);
         }
 
-        .btn-icon.active {
-            background: var(--primary);
-            color: white;
-            border-color: transparent;
-        }
-        
         .btn-primary {
-            background: #1D1D1F;
+            background: #007AFF;
             color: white;
-            padding: 10px 20px;
-            border-radius: 100px;
+            border: none;
+            padding: 10px 24px;
+            border-radius: 999px;
             font-weight: 600;
-            font-size: 14px;
-            transition: transform 0.2s;
+            font-size: 15px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 12px rgba(0, 122, 255, 0.3);
         }
-        
-        .btn-primary:active { transform: scale(0.96); }
 
-        /* Animations */
-        .shake-screen {
-            animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both;
+        .btn-primary:hover {
+            background: #0062CC;
+            transform: translateY(-1px);
         }
-        
-        .flash-overlay {
+
+        .btn-primary:active {
+            transform: translateY(1px);
+        }
+
+        #game-container {
             position: absolute;
-            inset: 0;
-            background: var(--danger);
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.1s;
-            z-index: 40;
-            mix-blend-mode: overlay;
+            top: 80px;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 10;
         }
 
-        @keyframes shake {
-            10%, 90% { transform: translate3d(-1px, 0, 0); }
-            20%, 80% { transform: translate3d(2px, 0, 0); }
-            30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
-            40%, 60% { transform: translate3d(4px, 0, 0); }
+        canvas {
+            border-radius: 24px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
+            background: white;
+            max-width: 95vw;
+            max-height: 80vh;
         }
 
         /* Modal */
         .modal-overlay {
             position: fixed;
-            inset: 0;
-            background: rgba(0,0,0,0.2);
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.2);
             backdrop-filter: blur(5px);
             z-index: 100;
             display: flex;
-            align-items: center;
             justify-content: center;
+            align-items: center;
             opacity: 0;
             pointer-events: none;
-            transition: opacity 0.3s;
-        }
-        
-        .modal-card {
-            background: white;
-            padding: 32px;
-            border-radius: 32px;
-            text-align: center;
-            transform: scale(0.9) translateY(20px);
-            transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
-            box-shadow: var(--shadow-lg);
-            max-width: 90vw;
-            width: 320px;
+            transition: opacity 0.3s ease;
         }
 
         .modal-overlay.show {
@@ -269,43 +153,140 @@
             pointer-events: auto;
         }
 
+        .modal-card {
+            background: white;
+            padding: 40px;
+            border-radius: 32px;
+            text-align: center;
+            width: 90%;
+            max-width: 360px;
+            transform: scale(0.9);
+            transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+        }
+
         .modal-overlay.show .modal-card {
-            transform: scale(1) translateY(0);
+            transform: scale(1);
+        }
+
+        /* Dropdown */
+        .dropdown-menu {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            margin-top: 8px;
+            background: white;
+            border-radius: 16px;
+            padding: 8px;
+            min-width: 160px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+            opacity: 0;
+            transform: translateY(-10px);
+            pointer-events: none;
+            transition: all 0.2s ease;
+            z-index: 60;
+        }
+
+        .dropdown-menu.show {
+            opacity: 1;
+            transform: translateY(0);
+            pointer-events: auto;
+        }
+
+        .dropdown-item {
+            padding: 10px 16px;
+            border-radius: 12px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: #1D1D1F;
+            font-weight: 500;
+            font-size: 14px;
+        }
+
+        .dropdown-item:hover {
+            background: #F5F5F7;
+        }
+
+        .dropdown-item.active {
+            color: #007AFF;
+            background: rgba(0, 122, 255, 0.1);
+        }
+
+        /* Screen Shake */
+        @keyframes shake {
+
+            0%,
+            100% {
+                transform: translateX(0);
+            }
+
+            25% {
+                transform: translateX(-5px);
+            }
+
+            75% {
+                transform: translateX(5px);
+            }
+        }
+
+        .shake-screen {
+            animation: shake 0.3s cubic-bezier(.36, .07, .19, .97) both;
+        }
+
+        #flash {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 59, 48, 0.3);
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.1s ease;
+            z-index: 90;
         }
     </style>
 </head>
-<body onclick="closeDropdown(event)">
 
-    <div class="bg-mesh"></div>
-    <div class="flash-overlay" id="flash"></div>
+<body>
+    <div id="flash"></div>
 
-    <!-- Top UI -->
-    <div class="top-bar">
-        <!-- Error Counter -->
-        <div class="glass-panel top-pill text-red-500">
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 12s-5.6-4.6-9.2-1.7c-3.1 2.5-1.9 8.2 2.6 11 3.5 2.1 6.6-1.7 6.6-1.7s3.1 3.8 6.6 1.7c4.5-2.8 5.7-8.5 2.6-11C17.6 7.4 12 12 12 12z"></path></svg>
-            <span id="error-count">0</span>
+    <!-- Top Bar -->
+    <div class="top-bar glass-panel">
+        <div class="top-pill">
+            <span class="text-gray-500">Errors</span>
+            <span id="error-count" class="text-red-500">0</span>
         </div>
 
-        <!-- Custom Dropdown -->
-        <div class="dropdown-container">
+        <div class="relative">
             <div id="difficultyMenu" class="dropdown-menu">
-                <div class="dropdown-item" onclick="setDifficulty(12, 'Easy')">
-                    <span>Easy</span>
-                </div>
+                <div class="dropdown-item" onclick="setDifficulty(15, 'Easy')">Easy</div>
                 <div class="dropdown-item active" onclick="setDifficulty(20, 'Medium')">
-                    <span>Medium</span>
-                    <svg class="check-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                    Medium
+                    <svg class="check-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16"
+                        viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
                 </div>
-                <div class="dropdown-item" onclick="setDifficulty(35, 'Hard')">
-                    <span>Hard</span>
-                </div>
+                <div class="dropdown-item" onclick="setDifficulty(30, 'Hard')">Hard</div>
             </div>
 
             <div class="glass-panel top-pill dropdown-trigger" onclick="toggleDropdown(event)">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+                    <polyline points="2 17 12 22 22 17"></polyline>
+                    <polyline points="2 12 12 17 22 12"></polyline>
+                </svg>
                 <span id="difficultyLabel">Medium</span>
-                <svg class="chevron ml-1 opacity-50" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                <svg class="chevron ml-1 opacity-50" xmlns="http://www.w3.org/2000/svg" width="14" height="14"
+                    viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+                    stroke-linejoin="round">
+                    <polyline points="6 9 12 15 18 9"></polyline>
+                </svg>
             </div>
         </div>
     </div>
@@ -318,27 +299,45 @@
     <!-- Bottom Controls -->
     <div class="controls glass-panel">
         <button class="btn-icon" onclick="toggleSound()" id="soundBtn" title="Toggle Sound">
-            <svg id="icon-sound-on" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>
-            <svg id="icon-sound-off" class="hidden" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><line x1="23" y1="9" x2="17" y2="15"></line><line x1="17" y1="9" x2="23" y2="15"></line></svg>
+            <svg id="icon-sound-on" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
+                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+            </svg>
+            <svg id="icon-sound-off" class="hidden" xmlns="http://www.w3.org/2000/svg" width="20" height="20"
+                viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                stroke-linejoin="round">
+                <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                <line x1="23" y1="9" x2="17" y2="15"></line>
+                <line x1="17" y1="9" x2="23" y2="15"></line>
+            </svg>
         </button>
 
         <div style="width: 1px; height: 24px; background: rgba(0,0,0,0.1);"></div>
 
         <button class="btn-primary" onclick="generateNewGame()">New Maze</button>
-        
+
         <button class="btn-icon" onclick="clearDrawing()" title="Clear Path">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3h18v18H3zM15 9l-6 6m0-6l6 6"/></svg>
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 3h18v18H3zM15 9l-6 6m0-6l6 6" />
+            </svg>
         </button>
     </div>
 
     <!-- Success Modal -->
     <div class="modal-overlay" id="successModal">
         <div class="modal-card">
-            <div class="w-16 h-16 bg-green-100 text-green-500 rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+            <div
+                class="w-16 h-16 bg-green-100 text-green-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
             </div>
             <h2 class="text-2xl font-bold mb-2 text-gray-900">Maze Clear!</h2>
-            <p class="text-gray-500 mb-6">You navigated the maze with <span id="final-errors" class="font-bold text-gray-900">0</span> errors.</p>
+            <p class="text-gray-500 mb-6">You navigated the maze with <span id="final-errors"
+                    class="font-bold text-gray-900">0</span> errors.</p>
             <button class="btn-primary w-full py-3" onclick="closeModalAndReset()">Play Again</button>
         </div>
     </div>
@@ -350,22 +349,22 @@
         const container = document.getElementById('game-container');
         const errorDisplay = document.getElementById('error-count');
         const flashOverlay = document.getElementById('flash');
-        
+
         // State
         let cols, rows;
         let cellSize;
-        let grid = []; 
+        let grid = [];
         let stack = [];
         let walls = [];
         let startCell, endCell;
         let isMuted = false;
         let currentDifficulty = 20;
-        
+
         // Drawing State
         let isDrawing = false;
         let isGameActive = true;
-        let lastPos = {x: 0, y: 0};
-        let userPath = []; 
+        let lastPos = { x: 0, y: 0 };
+        let userPath = [];
         let errorCount = 0;
         let collisionPoints = [];
 
@@ -391,19 +390,19 @@
         function generateMaze() {
             isGameActive = true;
             document.getElementById('successModal').classList.remove('show');
-            
+
             const diff = currentDifficulty;
             const margin = 30; // Margin around canvas
             const uiHeight = 160; // Space for top/bottom UI
-            
+
             const w = window.innerWidth - margin * 2;
             const h = window.innerHeight - uiHeight;
-            
-            cellSize = Math.floor(Math.min(w, h) / (diff/2 + 5)); // Responsive scaling
-            
+
+            cellSize = Math.floor(Math.min(w, h) / (diff / 2 + 5)); // Responsive scaling
+
             cols = Math.floor(w / cellSize);
             rows = Math.floor(h / cellSize);
-            
+
             // Limit minimum size
             cols = Math.max(cols, 3);
             rows = Math.max(rows, 3);
@@ -426,7 +425,7 @@
             stack = [];
             let finished = false;
 
-            while(!finished) {
+            while (!finished) {
                 const next = checkNeighbors(current);
                 if (next) {
                     next.visited = true;
@@ -441,12 +440,13 @@
             }
 
             // Define Goals
-            startCell = {x: 0, y: 0, w: cellSize, h: cellSize};
-            endCell = {x: (cols-1)*cellSize, y: (rows-1)*cellSize, w: cellSize, h: cellSize};
+            startCell = { x: 0, y: 0, w: cellSize, h: cellSize };
+            endCell = { x: (cols - 1) * cellSize, y: (rows - 1) * cellSize, w: cellSize, h: cellSize };
 
             buildWallRects();
             clearDrawing();
         }
+        const generateNewGame = generateMaze;
 
         function checkNeighbors(cell) {
             let neighbors = [];
@@ -482,17 +482,17 @@
             const offset = thickness / 2;
 
             // Borders
-            walls.push({x: 0, y: 0, w: canvas.width, h: thickness}); 
-            walls.push({x: 0, y: canvas.height - thickness, w: canvas.width, h: thickness});
-            walls.push({x: 0, y: 0, w: thickness, h: canvas.height});
-            walls.push({x: canvas.width - thickness, y: 0, w: thickness, h: canvas.height});
+            walls.push({ x: 0, y: 0, w: canvas.width, h: thickness });
+            walls.push({ x: 0, y: canvas.height - thickness, w: canvas.width, h: thickness });
+            walls.push({ x: 0, y: 0, w: thickness, h: canvas.height });
+            walls.push({ x: canvas.width - thickness, y: 0, w: thickness, h: canvas.height });
 
             // Inner Walls
             for (let i = 0; i < grid.length; i++) {
                 const c = grid[i];
                 const x = c.c * cellSize;
                 const y = c.r * cellSize;
-                
+
                 // Right Wall
                 if (c.walls[1]) {
                     walls.push({ x: x + cellSize - offset, y: y - offset, w: thickness, h: cellSize + thickness });
@@ -511,12 +511,12 @@
             const maxY = Math.max(p1.y, p2.y);
 
             // Expand rect slightly for strict collision
-            const padding = 2; 
+            const padding = 2;
 
             if (maxX < rect.x + padding || minX > rect.x + rect.w - padding || maxY < rect.y + padding || minY > rect.y + rect.h - padding) {
-                return false; 
+                return false;
             }
-            return true; 
+            return true;
         }
 
         // --- RENDERER ---
@@ -525,38 +525,103 @@
             ctx.fillStyle = "#FFFFFF";
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            // Draw Start Zone (Green Gradient)
-            const gradStart = ctx.createLinearGradient(0, 0, cellSize, cellSize);
-            gradStart.addColorStop(0, '#dcfce7');
-            gradStart.addColorStop(1, '#bbf7d0');
+            // Animation State
+            const time = performance.now() / 1000;
+            const pulse = (Math.sin(time * 3) + 1) / 2; // 0 to 1
+
+            // --- Draw Start Zone ---
+            // Proportional Sizing
+            const padding = cellSize * 0.15; // 15% padding
+            const sx = startCell.x + padding;
+            const sy = startCell.y + padding;
+            const sw = cellSize - (padding * 2);
+            const sh = cellSize - (padding * 2);
+            const scx = startCell.x + cellSize / 2;
+            const scy = startCell.y + cellSize / 2;
+
+            // Pulsing Glow (Underneath)
+            ctx.save();
+            ctx.translate(scx, scy);
+            const startScale = 1 + (pulse * 0.15);
+            ctx.scale(startScale, startScale);
+            ctx.beginPath();
+            ctx.arc(0, 0, (sw / 2), 0, Math.PI * 2); // Use proportional radius
+            ctx.fillStyle = "rgba(52, 199, 89, 0.3)"; // Success color low opacity
+            ctx.fill();
+            ctx.restore();
+
+            // Main Circle
+            ctx.beginPath();
+            ctx.arc(scx, scy, (sw / 2), 0, Math.PI * 2);
+            const gradStart = ctx.createLinearGradient(sx, sy, sx + sw, sy + sh);
+            gradStart.addColorStop(0, '#34C759'); // Apple Success Green
+            gradStart.addColorStop(1, '#248A3D');
             ctx.fillStyle = gradStart;
-            ctx.fillRect(4, 4, cellSize-8, cellSize-8);
-            
-            // Start Icon
+            ctx.shadowColor = "rgba(0,0,0,0.15)"; // Reduced shadow opacity
+            ctx.shadowBlur = padding * 0.5; // Proportional shadow blur
+            ctx.shadowOffsetY = padding * 0.2;
+            ctx.fill();
+            ctx.shadowColor = "transparent"; // Reset shadow
+
+            // Start Icon (Simple White Dot)
             ctx.beginPath();
-            ctx.arc(cellSize/2, cellSize/2, 6, 0, Math.PI*2);
-            ctx.fillStyle = "#16a34a";
+            ctx.arc(scx, scy, cellSize * 0.12, 0, Math.PI * 2); // Slightly smaller dot
+            ctx.fillStyle = "white";
             ctx.fill();
 
-            // Draw End Zone (Red Gradient)
-            const ex = endCell.x;
-            const ey = endCell.y;
-            const gradEnd = ctx.createLinearGradient(ex, ey, ex+cellSize, ey+cellSize);
-            gradEnd.addColorStop(0, '#fee2e2');
-            gradEnd.addColorStop(1, '#fecaca');
+
+            // --- Draw End Zone ---
+            const ex = endCell.x + padding;
+            const ey = endCell.y + padding;
+            const ew = cellSize - (padding * 2);
+            // eh is same as ew since it's a square cell
+            const ecx = endCell.x + cellSize / 2;
+            const ecy = endCell.y + cellSize / 2;
+
+            // Pulsing Glow
+            ctx.save();
+            ctx.translate(ecx, ecy);
+            const endScale = 1 + (pulse * 0.15);
+            ctx.scale(endScale, endScale);
+            ctx.beginPath();
+            ctx.arc(0, 0, (ew / 2), 0, Math.PI * 2);
+            ctx.fillStyle = "rgba(255, 59, 48, 0.3)"; // Danger color low opacity
+            ctx.fill();
+            ctx.restore();
+
+            // Main Circle
+            ctx.beginPath();
+            ctx.arc(ecx, ecy, (ew / 2), 0, Math.PI * 2);
+            const gradEnd = ctx.createLinearGradient(ex, ey, ex + ew, ey + ew);
+            gradEnd.addColorStop(0, '#FF3B30'); // Apple Danger Red
+            gradEnd.addColorStop(1, '#D70015');
             ctx.fillStyle = gradEnd;
-            ctx.fillRect(ex+4, ey+4, cellSize-8, cellSize-8);
-
-            // End Icon (Target)
-            ctx.beginPath();
-            ctx.arc(ex + cellSize/2, ey + cellSize/2, 8, 0, Math.PI*2);
-            ctx.strokeStyle = "#dc2626";
-            ctx.lineWidth = 3;
-            ctx.stroke();
-            ctx.beginPath();
-            ctx.arc(ex + cellSize/2, ey + cellSize/2, 3, 0, Math.PI*2);
-            ctx.fillStyle = "#dc2626";
+            ctx.shadowColor = "rgba(0,0,0,0.15)";
+            ctx.shadowBlur = padding * 0.5;
+            ctx.shadowOffsetY = padding * 0.2;
             ctx.fill();
+            ctx.shadowColor = "transparent";
+
+            // End Icon (Bullseye Target)
+            // Outer Ring
+            ctx.beginPath();
+            ctx.arc(ecx, ecy, cellSize * 0.22, 0, Math.PI * 2); // Proportional size
+            ctx.strokeStyle = "rgba(255, 255, 255, 0.9)";
+            ctx.lineWidth = cellSize * 0.05; // Proportional line width
+            ctx.stroke();
+
+            // Inner Dot
+            ctx.beginPath();
+            ctx.arc(ecx, ecy, cellSize * 0.08, 0, Math.PI * 2);
+            ctx.fillStyle = "white";
+            ctx.fill();
+
+            // Border Ring for End (Subtle outer rim)
+            ctx.beginPath();
+            ctx.arc(ecx, ecy, (ew / 2), 0, Math.PI * 2);
+            ctx.strokeStyle = "rgba(255,255,255,0.3)";
+            ctx.lineWidth = 2;
+            ctx.stroke();
 
             // Draw Path with Glow
             if (userPath.length > 0) {
@@ -566,7 +631,7 @@
                 ctx.lineWidth = 6;
                 ctx.lineCap = "round";
                 ctx.lineJoin = "round";
-                
+
                 ctx.beginPath();
                 let active = false;
                 for (let i = 0; i < userPath.length; i++) {
@@ -582,7 +647,7 @@
             }
 
             // Draw Walls
-            ctx.fillStyle = "#1D1D1F"; 
+            ctx.fillStyle = "#1D1D1F";
             walls.forEach(w => {
                 roundRect(ctx, w.x, w.y, w.w, w.h, 4);
                 ctx.fill();
@@ -624,24 +689,24 @@
             if (!isGameActive) return;
             // Ignore touches on UI
             if (e.target.closest('.controls') || e.target.closest('.top-bar')) return;
-            
+
             isDrawing = true;
             lastPos = getPos(e);
-            
+
             if (userPath.length === 0) userPath.push(lastPos);
             else {
-                userPath.push(null); 
+                userPath.push(null);
                 userPath.push(lastPos);
             }
             if (audioCtx.state === 'suspended') audioCtx.resume();
-            
+
             render();
         }
 
         function draw(e) {
             if (!isDrawing || !isGameActive) return;
-            e.preventDefault(); 
-            
+            e.preventDefault();
+
             const currentPos = getPos(e);
 
             // Wall Collision
@@ -655,7 +720,7 @@
 
             if (hit) {
                 handleCollision(currentPos);
-                isDrawing = false; 
+                isDrawing = false;
                 return;
             }
 
@@ -667,7 +732,7 @@
 
             userPath.push(currentPos);
             lastPos = currentPos;
-            
+
             requestAnimationFrame(render);
         }
 
@@ -677,7 +742,7 @@
             errorCount++;
             errorDisplay.innerText = errorCount;
             collisionPoints.push(pos);
-            
+
             flashOverlay.style.opacity = '0.3';
             container.classList.add('shake-screen');
             playBuzzSound();
@@ -693,21 +758,21 @@
             isGameActive = false;
             isDrawing = false;
             render();
-            
+
             if (!isMuted) {
                 const osc = audioCtx.createOscillator();
                 const gain = audioCtx.createGain();
                 osc.type = 'sine';
-                
+
                 const now = audioCtx.currentTime;
-                osc.frequency.setValueAtTime(523.25, now); 
-                osc.frequency.setValueAtTime(659.25, now + 0.1); 
-                osc.frequency.setValueAtTime(783.99, now + 0.2); 
-                osc.frequency.setValueAtTime(1046.50, now + 0.3); 
-                
+                osc.frequency.setValueAtTime(523.25, now);
+                osc.frequency.setValueAtTime(659.25, now + 0.1);
+                osc.frequency.setValueAtTime(783.99, now + 0.2);
+                osc.frequency.setValueAtTime(1046.50, now + 0.3);
+
                 gain.gain.setValueAtTime(0.1, now);
                 gain.gain.exponentialRampToValueAtTime(0.01, now + 0.6);
-                
+
                 osc.connect(gain);
                 gain.connect(audioCtx.destination);
                 osc.start();
@@ -724,22 +789,20 @@
                 const osc = audioCtx.createOscillator();
                 const gain = audioCtx.createGain();
                 osc.type = 'sawtooth';
-                osc.frequency.value = 60; 
-                
+                osc.frequency.value = 60;
+
                 const now = audioCtx.currentTime;
                 gain.gain.setValueAtTime(0.15, now);
-                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2); 
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
 
                 osc.connect(gain);
                 gain.connect(audioCtx.destination);
                 osc.start();
                 osc.stop(now + 0.2);
-            } catch (e) {}
+            } catch (e) { }
         }
 
         // --- UI UTILS ---
-        
-        // Dropdown Logic
         function toggleDropdown(e) {
             e.stopPropagation();
             const menu = document.getElementById('difficultyMenu');
@@ -756,7 +819,7 @@
         function setDifficulty(value, label) {
             currentDifficulty = value;
             document.getElementById('difficultyLabel').innerText = label;
-            
+
             // Update Active State
             const items = document.querySelectorAll('.dropdown-item');
             items.forEach(item => {
@@ -765,7 +828,7 @@
                 if (item.querySelector('.check-icon')) {
                     item.querySelector('.check-icon').remove();
                 }
-                
+
                 // Set active if matches
                 if (item.innerText.includes(label)) {
                     item.classList.add('active');
@@ -804,10 +867,10 @@
         canvas.addEventListener('mousemove', draw);
         canvas.addEventListener('mouseup', stopDrawing);
         canvas.addEventListener('mouseout', stopDrawing);
-        
+
         // Touch
-        canvas.addEventListener('touchstart', startDrawing, {passive: false});
-        canvas.addEventListener('touchmove', draw, {passive: false});
+        canvas.addEventListener('touchstart', startDrawing, { passive: false });
+        canvas.addEventListener('touchmove', draw, { passive: false });
         canvas.addEventListener('touchend', stopDrawing);
 
         // Init
@@ -815,4 +878,5 @@
 
     </script>
 </body>
+
 </html>
