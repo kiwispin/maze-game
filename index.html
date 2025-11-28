@@ -113,7 +113,7 @@
         #game-container {
             position: absolute;
             top: 80px;
-            bottom: 0;
+            bottom: 120px;
             left: 0;
             right: 0;
             display: flex;
@@ -272,6 +272,10 @@
                     </svg>
                 </div>
                 <div class="dropdown-item" onclick="setDifficulty(30, 'Hard')">Hard</div>
+                <div style="height: 1px; background: #E5E5EA; margin: 4px 0;"></div>
+                <div class="dropdown-item" id="strictModeToggle" onclick="toggleStrict()">
+                    Strict Mode
+                </div>
             </div>
 
             <div class="glass-panel top-pill dropdown-trigger" onclick="toggleDropdown(event)">
@@ -359,6 +363,7 @@
         let startCell, endCell;
         let isMuted = false;
         let currentDifficulty = 20;
+        let strictMode = false;
 
         // Drawing State
         let isDrawing = false;
@@ -393,7 +398,7 @@
 
             const diff = currentDifficulty;
             const margin = 30; // Margin around canvas
-            const uiHeight = 160; // Space for top/bottom UI
+            const uiHeight = 220; // Space for top/bottom UI
 
             const w = window.innerWidth - margin * 2;
             const h = window.innerHeight - uiHeight;
@@ -636,10 +641,15 @@
                 let active = false;
                 for (let i = 0; i < userPath.length; i++) {
                     const p = userPath[i];
-                    if (p === null) { active = false; }
-                    else {
-                        if (!active) { ctx.moveTo(p.x, p.y); active = true; }
-                        else { ctx.lineTo(p.x, p.y); }
+                    if (p === null) {
+                        active = false;
+                    } else {
+                        if (!active) {
+                            ctx.moveTo(p.x, p.y);
+                            active = true;
+                        } else {
+                            ctx.lineTo(p.x, p.y);
+                        }
                     }
                 }
                 ctx.stroke();
@@ -690,16 +700,72 @@
             // Ignore touches on UI
             if (e.target.closest('.controls') || e.target.closest('.top-bar')) return;
 
-            isDrawing = true;
-            lastPos = getPos(e);
+            const pos = getPos(e);
+            const leeway = 10;
 
-            if (userPath.length === 0) userPath.push(lastPos);
-            else {
-                userPath.push(null);
+            // Check if starting at Start Cell
+            const isAtStart = (pos.x >= startCell.x - leeway && pos.x <= startCell.x + startCell.w + leeway &&
+                pos.y >= startCell.y - leeway && pos.y <= startCell.y + startCell.h + leeway);
+
+            // Check if resuming from last point
+            let isResuming = false;
+            if (userPath.length > 0) {
+                const lastPoint = userPath[userPath.length - 1];
+                if (lastPoint) {
+                    const dist = Math.hypot(pos.x - lastPoint.x, pos.y - lastPoint.y);
+                    if (dist < cellSize) {
+                        // Allow resuming within 1 cell size distance
+                        isResuming = true;
+                    }
+                }
+            }
+
+            // Enforcement Logic
+            let canStart = false;
+
+            if (userPath.length === 0) {
+                // First move must be at start
+                if (isAtStart) canStart = true;
+            } else {
+                if (strictMode) {
+                    // Strict Mode: Must always restart from start if you lift your finger
+                    if (isAtStart) {
+                        // If restarting at start, clear old path
+                        userPath = [];
+                        collisionPoints = [];
+                        errorCount = 0;
+                        errorDisplay.innerText = 0;
+                        canStart = true;
+                    }
+                } else {
+                    // Normal Mode: Can resume OR restart
+                    if (isResuming) canStart = true;
+                    if (isAtStart) {
+                        // Optional: Could clear path here too if they want to restart, 
+                        // but for now let's just allow drawing. 
+                        // Better UX: If they go back to start, maybe they want to restart?
+                        // Let's keep it simple: If they touch start, they can draw. 
+                        // If they touch near end of path, they can draw.
+                        canStart = true;
+                    }
+                }
+            }
+
+            if (!canStart) return;
+
+            isDrawing = true;
+            lastPos = pos;
+            if (userPath.length === 0) {
+                userPath.push(lastPos);
+            } else {
+                // If resuming, don't add a gap, just continue
+                // If restarting (jumping back to start), we might want a gap or clear.
+                // For simplicity in this logic:
+                userPath.push(null); // Break line
                 userPath.push(lastPos);
             }
-            if (audioCtx.state === 'suspended') audioCtx.resume();
 
+            if (audioCtx.state === 'suspended') audioCtx.resume();
             render();
         }
 
@@ -732,11 +798,12 @@
 
             userPath.push(currentPos);
             lastPos = currentPos;
-
             requestAnimationFrame(render);
         }
 
-        function stopDrawing() { isDrawing = false; }
+        function stopDrawing() {
+            isDrawing = false;
+        }
 
         function handleCollision(pos) {
             errorCount++;
@@ -823,6 +890,8 @@
             // Update Active State
             const items = document.querySelectorAll('.dropdown-item');
             items.forEach(item => {
+                if (item.id === 'strictModeToggle') return; // Skip strict toggle
+
                 // Reset styling
                 item.classList.remove('active');
                 if (item.querySelector('.check-icon')) {
@@ -837,6 +906,22 @@
             });
 
             generateNewGame();
+        }
+
+        function toggleStrict() {
+            strictMode = !strictMode;
+            const item = document.getElementById('strictModeToggle');
+            if (strictMode) {
+                item.classList.add('active');
+                if (!item.querySelector('.check-icon')) {
+                    item.innerHTML += `<svg class="check-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
+                }
+            } else {
+                item.classList.remove('active');
+                if (item.querySelector('.check-icon')) {
+                    item.querySelector('.check-icon').remove();
+                }
+            }
         }
 
         function clearDrawing() {
@@ -860,7 +945,9 @@
         }
 
         // Event Listeners
-        window.addEventListener('resize', () => { setTimeout(generateMaze, 100); });
+        window.addEventListener('resize', () => {
+            setTimeout(generateMaze, 100);
+        });
 
         // Mouse
         canvas.addEventListener('mousedown', startDrawing);
@@ -875,7 +962,6 @@
 
         // Init
         setTimeout(generateMaze, 100);
-
     </script>
 </body>
 
