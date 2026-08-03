@@ -650,7 +650,7 @@
             START_LEEWAY: 10,
             RESUME_TOLERANCE_CELLS: 1,
             TARGET_TOLERANCE: 0.95,
-            MIN_CELL: 12,
+            MIN_CELL: 24,
             MAX_CELL: 64,
             MIN_DIM: 3,
             MAX_COLS: 80,
@@ -973,6 +973,7 @@
         let flashTimer = null;
         let shakeTimer = null;
         let resizeTimer = null;
+        let rejectFlashUntilT = 0;
         let reducedMotion = false;
         let debugBuffer = [];
         let debugDirty = false;
@@ -1256,6 +1257,20 @@
             ctx.arc(ec.x, ec.y, baseR * scale, 0, Math.PI * 2);
             ctx.strokeStyle = 'rgba(255,59,48,0.4)';
             ctx.stroke();
+
+            if (rejectFlashUntilT > 0) {
+                const remain = rejectFlashUntilT - t;
+                if (remain > 0) {
+                    const alpha = Math.max(0, Math.min(1, remain / 0.5));
+                    ctx.beginPath();
+                    ctx.arc(sc.x, sc.y, baseR, 0, Math.PI * 2);
+                    ctx.strokeStyle = 'rgba(255,59,48,' + (0.7 * alpha).toFixed(3) + ')';
+                    ctx.lineWidth = 4;
+                    ctx.stroke();
+                } else {
+                    rejectFlashUntilT = 0;
+                }
+            }
         }
 
         function drawDynamic() {
@@ -1354,7 +1369,6 @@
             if (currentState === STATE.WON || modalOpen) return;
             if (activePointerId !== null) return;
             if (!isPrimaryPointerAllowed(e.pointerType, e.isPrimary, e.button)) return;
-            if (e.buttons === 0) return;
 
             const pos = clampSample(toLogical(e.clientX, e.clientY));
             const hasPath = userPath.length > 0;
@@ -1367,6 +1381,7 @@
             if (action === 'reject') {
                 const msg = getStartRejectMessage(hasPath, strictMode, isAtStart);
                 if (msg) announce(msg);
+                rejectFlashUntilT = performance.now() / 1000 + 0.5;
                 return;
             }
 
