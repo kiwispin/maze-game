@@ -3,31 +3,79 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="color-scheme" content="light">
     <title>Maze Flow</title>
-    <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        :root {
+            --accent: #007AFF;
+            --accent-dark: #0062CC;
+            --success: #34C759;
+            --danger: #FF3B30;
+            --text: #1D1D1F;
+            --text-muted: #6E6E73;
+            --panel: rgba(255, 255, 255, 0.85);
+            --panel-border: rgba(255, 255, 255, 0.5);
+            --line: rgba(0, 0, 0, 0.1);
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        html,
+        body {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+        }
 
         body {
-            font-family: 'Inter', sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
             background-color: #F5F5F7;
-            /* Apple-like light gray */
+            color: var(--text);
             overflow: hidden;
-            touch-action: none;
             -webkit-user-select: none;
             user-select: none;
         }
 
-        /* Glassmorphism UI */
+        button {
+            font-family: inherit;
+        }
+
+        button:focus-visible,
+        canvas:focus-visible,
+        a:focus-visible {
+            outline: 2px solid var(--accent);
+            outline-offset: 2px;
+        }
+
+        .visually-hidden {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            margin: -1px;
+            padding: 0;
+            overflow: hidden;
+            clip: rect(0 0 0 0);
+            clip-path: inset(50%);
+            border: 0;
+            white-space: nowrap;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
         .glass-panel {
-            background: rgba(255, 255, 255, 0.85);
+            background: var(--panel);
             backdrop-filter: blur(20px);
             -webkit-backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.5);
+            border: 1px solid var(--panel-border);
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.05);
         }
 
+        /* --- Top bar --- */
         .top-bar {
             position: absolute;
             top: 0;
@@ -45,13 +93,123 @@
             padding: 8px 16px;
             border-radius: 999px;
             font-weight: 600;
-            color: #1D1D1F;
+            color: var(--text);
             display: flex;
             align-items: center;
             gap: 8px;
             font-size: 15px;
         }
 
+        .top-pill .muted {
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        .top-pill .error-value {
+            color: var(--danger);
+            font-variant-numeric: tabular-nums;
+        }
+
+        .dropdown {
+            position: relative;
+        }
+
+        .dropdown-trigger {
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            font: inherit;
+            color: inherit;
+            padding: 8px 16px;
+        }
+
+        .dropdown-trigger .chevron {
+            margin-left: 4px;
+            opacity: 0.5;
+        }
+
+        .dropdown-menu {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            margin-top: 8px;
+            background: white;
+            border-radius: 16px;
+            padding: 8px;
+            min-width: 170px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+            opacity: 0;
+            transform: translateY(-10px);
+            pointer-events: none;
+            transition: opacity 0.2s ease, transform 0.2s ease;
+            z-index: 60;
+        }
+
+        .dropdown-menu.show {
+            opacity: 1;
+            transform: translateY(0);
+            pointer-events: auto;
+        }
+
+        .dropdown-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            padding: 10px 16px;
+            border: none;
+            border-radius: 12px;
+            background: transparent;
+            cursor: pointer;
+            color: var(--text);
+            font-weight: 500;
+            font-size: 14px;
+            text-align: left;
+        }
+
+        .dropdown-item:hover {
+            background: #F5F5F7;
+        }
+
+        .dropdown-item.active {
+            color: var(--accent);
+            background: rgba(0, 122, 255, 0.1);
+        }
+
+        .dropdown-sep {
+            height: 1px;
+            background: #E5E5EA;
+            margin: 4px 0;
+        }
+
+        /* --- Game area --- */
+        #game-container {
+            position: absolute;
+            top: 80px;
+            bottom: 120px;
+            left: 0;
+            right: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-width: 0;
+            min-height: 0;
+            z-index: 10;
+        }
+
+        canvas {
+            display: block;
+            border-radius: 24px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
+            background: white;
+            max-width: 100%;
+            max-height: 100%;
+            cursor: crosshair;
+            touch-action: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        /* --- Bottom controls --- */
         .controls {
             position: absolute;
             bottom: 40px;
@@ -65,6 +223,12 @@
             align-items: center;
         }
 
+        .controls .divider {
+            width: 1px;
+            height: 24px;
+            background: var(--line);
+        }
+
         .btn-icon {
             width: 44px;
             height: 44px;
@@ -74,7 +238,7 @@
             justify-content: center;
             border: none;
             background: transparent;
-            color: #1D1D1F;
+            color: var(--text);
             cursor: pointer;
             transition: all 0.2s ease;
         }
@@ -88,8 +252,14 @@
             transform: scale(0.95);
         }
 
+        .btn-icon:disabled {
+            opacity: 0.4;
+            cursor: default;
+            transform: none;
+        }
+
         .btn-primary {
-            background: #007AFF;
+            background: var(--accent);
             color: white;
             border: none;
             padding: 10px 24px;
@@ -102,7 +272,7 @@
         }
 
         .btn-primary:hover {
-            background: #0062CC;
+            background: var(--accent-dark);
             transform: translateY(-1px);
         }
 
@@ -110,27 +280,63 @@
             transform: translateY(1px);
         }
 
-        #game-container {
-            position: absolute;
-            top: 80px;
-            bottom: 120px;
+        .btn-primary.block {
+            display: block;
+            width: 100%;
+            padding-top: 12px;
+            padding-bottom: 12px;
+        }
+
+        /* --- Hover indicator --- */
+        .hover-ind {
+            position: fixed;
             left: 0;
-            right: 0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 10;
+            top: 0;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            border: 2px solid var(--text);
+            color: var(--text);
+            opacity: 0;
+            pointer-events: none;
+            z-index: 40;
+            transition: opacity 0.08s ease;
+            will-change: transform;
         }
 
-        canvas {
-            border-radius: 24px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
-            background: white;
-            max-width: 95vw;
-            max-height: 80vh;
+        .hover-ind::after {
+            content: "";
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            width: 6px;
+            height: 6px;
+            margin: -3px 0 0 -3px;
+            border-radius: 50%;
+            background: currentColor;
         }
 
-        /* Modal */
+        .hover-ind[data-state="start"] {
+            border-color: var(--success);
+            color: var(--success);
+        }
+
+        .hover-ind[data-state="drawing"] {
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        .hover-ind[data-state="collided"] {
+            border-color: var(--danger);
+            color: var(--danger);
+        }
+
+        .hover-ind[data-state="paused"] {
+            border-color: var(--text-muted);
+            color: var(--text-muted);
+        }
+
+        /* --- Modal --- */
         .modal-overlay {
             position: fixed;
             top: 0;
@@ -169,52 +375,37 @@
             transform: scale(1);
         }
 
-        /* Dropdown */
-        .dropdown-menu {
-            position: absolute;
-            top: 100%;
-            right: 0;
-            margin-top: 8px;
-            background: white;
-            border-radius: 16px;
-            padding: 8px;
-            min-width: 160px;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
-            opacity: 0;
-            transform: translateY(-10px);
-            pointer-events: none;
-            transition: all 0.2s ease;
-            z-index: 60;
-        }
-
-        .dropdown-menu.show {
-            opacity: 1;
-            transform: translateY(0);
-            pointer-events: auto;
-        }
-
-        .dropdown-item {
-            padding: 10px 16px;
-            border-radius: 12px;
-            cursor: pointer;
+        .modal-icon-wrap {
+            width: 64px;
+            height: 64px;
+            border-radius: 9999px;
+            background: #E8F8EE;
+            color: var(--success);
             display: flex;
-            justify-content: space-between;
             align-items: center;
-            color: #1D1D1F;
-            font-weight: 500;
-            font-size: 14px;
+            justify-content: center;
+            margin: 0 auto 16px;
         }
 
-        .dropdown-item:hover {
-            background: #F5F5F7;
+        .modal-title {
+            font-size: 24px;
+            font-weight: 700;
+            margin: 0 0 8px;
+            color: var(--text);
         }
 
-        .dropdown-item.active {
-            color: #007AFF;
-            background: rgba(0, 122, 255, 0.1);
+        .modal-sub {
+            color: var(--text-muted);
+            margin: 0 0 24px;
         }
 
-        /* Screen Shake */
+        .modal-sub strong {
+            font-weight: 700;
+            color: var(--text);
+            font-variant-numeric: tabular-nums;
+        }
+
+        /* --- Screen shake / flash --- */
         @keyframes shake {
 
             0%,
@@ -247,721 +438,1649 @@
             transition: opacity 0.1s ease;
             z-index: 90;
         }
+
+        /* --- Diagnostics (debug mode) --- */
+        .debug-panel {
+            position: fixed;
+            left: 12px;
+            bottom: 12px;
+            width: 320px;
+            max-height: 45vh;
+            background: rgba(255, 255, 255, 0.95);
+            border: 1px solid var(--line);
+            border-radius: 12px;
+            padding: 10px 12px;
+            font: 11px/1.4 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+            overflow: auto;
+            z-index: 80;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
+        }
+
+        .debug-panel h2 {
+            margin: 0 0 6px;
+            font-size: 12px;
+            font-family: inherit;
+        }
+
+        .debug-panel pre {
+            margin: 0 0 8px;
+            white-space: pre-wrap;
+            word-break: break-all;
+            color: var(--text);
+        }
+
+        .debug-panel .debug-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .debug-panel button {
+            font: inherit;
+            border: 1px solid var(--line);
+            background: #fff;
+            border-radius: 6px;
+            padding: 4px 8px;
+            cursor: pointer;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .btn-icon,
+            .btn-primary,
+            .modal-card,
+            .dropdown-menu {
+                transition: none;
+            }
+
+            .shake-screen {
+                animation: none;
+            }
+        }
     </style>
 </head>
 
 <body>
     <div id="flash"></div>
+    <div id="hoverInd" class="hover-ind" data-state="idle" aria-hidden="true"></div>
 
-    <!-- Top Bar -->
-    <div class="top-bar glass-panel">
+    <header class="top-bar glass-panel">
         <div class="top-pill">
-            <span class="text-gray-500">Errors</span>
-            <span id="error-count" class="text-red-500">0</span>
+            <span class="muted">Errors</span>
+            <span id="error-count" class="error-value">0</span>
         </div>
 
-        <div class="relative">
-            <div id="difficultyMenu" class="dropdown-menu">
-                <div class="dropdown-item" onclick="setDifficulty(15, 'Easy')">Easy</div>
-                <div class="dropdown-item active" onclick="setDifficulty(20, 'Medium')">
-                    Medium
-                    <svg class="check-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16"
-                        viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"
-                        stroke-linejoin="round">
-                        <polyline points="20 6 9 17 4 12"></polyline>
-                    </svg>
-                </div>
-                <div class="dropdown-item" onclick="setDifficulty(30, 'Hard')">Hard</div>
-                <div style="height: 1px; background: #E5E5EA; margin: 4px 0;"></div>
-                <div class="dropdown-item" id="strictModeToggle" onclick="toggleStrict()">
-                    Strict Mode
-                </div>
-            </div>
-
-            <div class="glass-panel top-pill dropdown-trigger" onclick="toggleDropdown(event)">
+        <div class="dropdown">
+            <button id="difficultyTrigger" type="button"
+                class="glass-panel top-pill dropdown-trigger" aria-haspopup="menu"
+                aria-expanded="false" aria-controls="difficultyMenu">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
-                    stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"
+                    aria-hidden="true">
                     <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
                     <polyline points="2 17 12 22 22 17"></polyline>
                     <polyline points="2 12 12 17 22 12"></polyline>
                 </svg>
                 <span id="difficultyLabel">Medium</span>
-                <svg class="chevron ml-1 opacity-50" xmlns="http://www.w3.org/2000/svg" width="14" height="14"
+                <svg class="chevron" xmlns="http://www.w3.org/2000/svg" width="14" height="14"
                     viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
-                    stroke-linejoin="round">
+                    stroke-linejoin="round" aria-hidden="true">
                     <polyline points="6 9 12 15 18 9"></polyline>
                 </svg>
+            </button>
+
+            <div id="difficultyMenu" class="dropdown-menu" role="menu" aria-label="Difficulty and game options">
+                <button type="button" role="menuitemradio" class="dropdown-item" data-difficulty="15"
+                    aria-checked="false">
+                    <span>Easy</span>
+                    <svg class="check-icon" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"
+                        aria-hidden="true" hidden>
+                        <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                </button>
+                <button type="button" role="menuitemradio" class="dropdown-item active" data-difficulty="20"
+                    aria-checked="true">
+                    <span>Medium</span>
+                    <svg class="check-icon" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"
+                        aria-hidden="true">
+                        <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                </button>
+                <button type="button" role="menuitemradio" class="dropdown-item" data-difficulty="30"
+                    aria-checked="false">
+                    <span>Hard</span>
+                    <svg class="check-icon" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"
+                        aria-hidden="true" hidden>
+                        <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                </button>
+                <div class="dropdown-sep" role="separator"></div>
+                <button type="button" id="strictModeToggle" role="menuitemcheckbox" class="dropdown-item"
+                    aria-checked="false">
+                    <span>Strict Mode</span>
+                    <svg class="check-icon" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"
+                        aria-hidden="true" hidden>
+                        <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                </button>
             </div>
         </div>
-    </div>
+    </header>
 
-    <!-- Game Canvas -->
-    <div id="game-container">
-        <canvas id="gameCanvas"></canvas>
-    </div>
+    <main id="game-container">
+        <canvas id="gameCanvas" aria-label="Maze drawing game" aria-describedby="canvas-instructions"></canvas>
+        <p id="canvas-instructions" class="visually-hidden">
+            Draw a continuous path from the green start circle to the red target without touching the black walls.
+            Use a mouse, pen, or your finger. Start or resume near the end of your path, or restart from the green
+            circle. Strict mode requires a restart from the green circle after every lift.
+        </p>
+    </main>
 
-    <!-- Bottom Controls -->
-    <div class="controls glass-panel">
-        <button class="btn-icon" onclick="toggleSound()" id="soundBtn" title="Toggle Sound">
+    <footer class="controls glass-panel">
+        <button id="soundBtn" class="btn-icon" type="button" aria-pressed="false" title="Toggle sound"
+            aria-label="Toggle sound">
             <svg id="icon-sound-on" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
-                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                aria-hidden="true">
                 <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
                 <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
             </svg>
             <svg id="icon-sound-off" class="hidden" xmlns="http://www.w3.org/2000/svg" width="20" height="20"
                 viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                stroke-linejoin="round">
+                stroke-linejoin="round" aria-hidden="true">
                 <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
                 <line x1="23" y1="9" x2="17" y2="15"></line>
                 <line x1="17" y1="9" x2="23" y2="15"></line>
             </svg>
         </button>
 
-        <div style="width: 1px; height: 24px; background: rgba(0,0,0,0.1);"></div>
+        <div class="divider" aria-hidden="true"></div>
 
-        <button class="btn-primary" onclick="generateNewGame()">New Maze</button>
+        <button id="newMazeBtn" class="btn-primary" type="button">New Maze</button>
 
-        <button class="btn-icon" onclick="clearDrawing()" title="Clear Path">
+        <button id="clearBtn" class="btn-icon" type="button" title="Clear path" aria-label="Clear path">
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
-                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                aria-hidden="true">
                 <path d="M3 3h18v18H3zM15 9l-6 6m0-6l6 6" />
             </svg>
         </button>
-    </div>
+    </footer>
 
-    <!-- Success Modal -->
-    <div class="modal-overlay" id="successModal">
+    <div class="modal-overlay" id="successModal" role="dialog" aria-modal="true" aria-labelledby="successTitle"
+        aria-hidden="true">
         <div class="modal-card">
-            <div
-                class="w-16 h-16 bg-green-100 text-green-500 rounded-full flex items-center justify-center mx-auto mb-4">
+            <div class="modal-icon-wrap" aria-hidden="true">
                 <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none"
                     stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
                     <polyline points="20 6 9 17 4 12"></polyline>
                 </svg>
             </div>
-            <h2 class="text-2xl font-bold mb-2 text-gray-900">Maze Clear!</h2>
-            <p class="text-gray-500 mb-6">You navigated the maze with <span id="final-errors"
-                    class="font-bold text-gray-900">0</span> errors.</p>
-            <button class="btn-primary w-full py-3" onclick="closeModalAndReset()">Play Again</button>
+            <h2 id="successTitle" class="modal-title">Maze Clear!</h2>
+            <p class="modal-sub">You navigated the maze with <strong id="final-errors">0</strong> error(s).</p>
+            <button id="playAgainBtn" class="btn-primary block" type="button">Play Again</button>
         </div>
     </div>
 
+    <div id="statusRegion" class="visually-hidden" aria-live="polite"></div>
+
+    <section id="debugPanel" class="debug-panel" hidden>
+        <h2>Input diagnostics</h2>
+        <pre id="debugOutput"></pre>
+        <div class="debug-actions">
+            <button id="debugCopy" type="button">Copy trace</button>
+            <button id="debugClear" type="button">Clear</button>
+        </div>
+    </section>
+
+    <noscript>
+        <p>Maze Flow requires JavaScript.</p>
+    </noscript>
+
     <script>
-        // --- CONFIGURATION ---
-        const canvas = document.getElementById('gameCanvas');
-        const ctx = canvas.getContext('2d');
-        const container = document.getElementById('game-container');
-        const errorDisplay = document.getElementById('error-count');
-        const flashOverlay = document.getElementById('flash');
+        'use strict';
 
-        // State
-        let cols, rows;
-        let cellSize;
-        let grid = [];
-        let stack = [];
-        let walls = [];
-        let startCell, endCell;
-        let isMuted = false;
-        let currentDifficulty = 20;
-        let strictMode = false;
+        // ============ CONFIGURATION ============
+        const CONFIG = Object.freeze({
+            WALL_THICKNESS: 8,
+            PATH_WIDTH: 6,
+            PATH_RADIUS: 3,
+            START_LEEWAY: 10,
+            RESUME_TOLERANCE_CELLS: 1,
+            TARGET_TOLERANCE: 0.95,
+            MIN_CELL: 12,
+            MAX_CELL: 64,
+            MIN_DIM: 3,
+            MAX_COLS: 80,
+            MAX_ROWS: 60,
+            LAYOUT_MARGIN: 24,
+            MIN_VIEWPORT: 80,
+            DPR_CAP: 3,
+            MIN_STORE_DIST: 1.5,
+            MAX_PATH_POINTS: 20000,
+            DEBUG_BUFFER: 120,
+            RESIZE_DEBOUNCE_MS: 200,
+            DIFFICULTIES: Object.freeze({ 15: 'Easy', 20: 'Medium', 30: 'Hard' })
+        });
 
-        // Drawing State
-        let isDrawing = false;
-        let isGameActive = true;
-        let lastPos = { x: 0, y: 0 };
-        let userPath = [];
-        let errorCount = 0;
-        let collisionPoints = [];
+        const STATE = Object.freeze({
+            IDLE: 'idle',
+            DRAWING: 'drawing',
+            PAUSED: 'paused',
+            COLLIDED: 'collided',
+            WON: 'won'
+        });
 
-        // Audio
-        const AudioContext = window.AudioContext || window.webkitAudioContext;
-        const audioCtx = new AudioContext();
+        // ============ PURE GEOMETRY ============
+        function clamp(value, min, max) {
+            return Math.max(min, Math.min(max, value));
+        }
 
-        // --- MAZE GENERATION ---
-        class Cell {
-            constructor(c, r) {
-                this.c = c;
-                this.r = r;
-                this.walls = [true, true, true, true]; // Top, Right, Bottom, Left
-                this.visited = false;
+        function clampPoint(p, w, h) {
+            return { x: clamp(p.x, 0, w), y: clamp(p.y, 0, h) };
+        }
+
+        function dist(a, b) {
+            return Math.hypot(a.x - b.x, a.y - b.y);
+        }
+
+        function pointInRect(px, py, rect) {
+            return px >= rect.x && px <= rect.x + rect.w && py >= rect.y && py <= rect.y + rect.h;
+        }
+
+        function distPointToSegment(px, py, ax, ay, bx, by) {
+            const dx = bx - ax;
+            const dy = by - ay;
+            const len2 = dx * dx + dy * dy;
+            if (len2 === 0) return Math.hypot(px - ax, py - ay);
+            let t = ((px - ax) * dx + (py - ay) * dy) / len2;
+            t = clamp(t, 0, 1);
+            return Math.hypot(px - (ax + t * dx), py - (ay + t * dy));
+        }
+
+        function segCross(a, b, c) {
+            return (b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x);
+        }
+
+        function pointOnSegment(a, b, p) {
+            return Math.min(a.x, b.x) <= p.x && p.x <= Math.max(a.x, b.x) &&
+                Math.min(a.y, b.y) <= p.y && p.y <= Math.max(a.y, b.y);
+        }
+
+        function segmentsIntersect(a, b, c, d) {
+            const d1 = segCross(c, d, a);
+            const d2 = segCross(c, d, b);
+            const d3 = segCross(a, b, c);
+            const d4 = segCross(a, b, d);
+            if (((d1 > 0 && d2 < 0) || (d1 < 0 && d2 > 0)) &&
+                ((d3 > 0 && d4 < 0) || (d3 < 0 && d4 > 0))) {
+                return true;
             }
+            if (d1 === 0 && pointOnSegment(c, d, a)) return true;
+            if (d2 === 0 && pointOnSegment(c, d, b)) return true;
+            if (d3 === 0 && pointOnSegment(a, b, c)) return true;
+            if (d4 === 0 && pointOnSegment(a, b, d)) return true;
+            return false;
         }
 
-        function index(c, r) {
-            if (c < 0 || r < 0 || c >= cols || r >= rows) return -1;
-            return c + r * cols;
+        function segSegDistance(a, b, c, d) {
+            if (segmentsIntersect(a, b, c, d)) return 0;
+            return Math.min(
+                distPointToSegment(c.x, c.y, a.x, a.y, b.x, b.y),
+                distPointToSegment(d.x, d.y, a.x, a.y, b.x, b.y),
+                distPointToSegment(a.x, a.y, c.x, c.y, d.x, d.y),
+                distPointToSegment(b.x, b.y, c.x, c.y, d.x, d.y)
+            );
         }
 
-        function generateMaze() {
-            isGameActive = true;
-            document.getElementById('successModal').classList.remove('show');
+        function segmentHitsCircle(p1, p2, center, radius) {
+            return distPointToSegment(center.x, center.y, p1.x, p1.y, p2.x, p2.y) <= radius;
+        }
 
-            const diff = currentDifficulty;
-            const margin = 30; // Margin around canvas
-            const uiHeight = 220; // Space for top/bottom UI
+        function segmentIntersectsExpandedRect(p1, p2, rect, radius) {
+            const minX = Math.min(p1.x, p2.x) - radius;
+            const maxX = Math.max(p1.x, p2.x) + radius;
+            const minY = Math.min(p1.y, p2.y) - radius;
+            const maxY = Math.max(p1.y, p2.y) + radius;
+            if (maxX < rect.x || minX > rect.x + rect.w || maxY < rect.y || minY > rect.y + rect.h) {
+                return false;
+            }
+            if (pointInRect(p1.x, p1.y, rect) || pointInRect(p2.x, p2.y, rect)) {
+                return true;
+            }
+            const edges = [
+                { x1: rect.x, y1: rect.y, x2: rect.x + rect.w, y2: rect.y },
+                { x1: rect.x + rect.w, y1: rect.y, x2: rect.x + rect.w, y2: rect.y + rect.h },
+                { x1: rect.x, y1: rect.y + rect.h, x2: rect.x + rect.w, y2: rect.y + rect.h },
+                { x1: rect.x, y1: rect.y, x2: rect.x, y2: rect.y + rect.h }
+            ];
+            for (const e of edges) {
+                if (segSegDistance(p1, p2, { x: e.x1, y: e.y1 }, { x: e.x2, y: e.y2 }) <= radius) {
+                    return true;
+                }
+            }
+            return false;
+        }
 
-            const w = window.innerWidth - margin * 2;
-            const h = window.innerHeight - uiHeight;
+        function cssToLogical(clientX, clientY, rect, canvasW, canvasH, renderScale) {
+            const scaleX = canvasW / rect.width;
+            const scaleY = canvasH / rect.height;
+            return {
+                x: (clientX - rect.left) * scaleX / renderScale,
+                y: (clientY - rect.top) * scaleY / renderScale
+            };
+        }
 
-            cellSize = Math.floor(Math.min(w, h) / (diff / 2 + 5)); // Responsive scaling
+        // ============ PURE MAZE GENERATION ============
+        function makeRng(seed) {
+            let s = (seed >>> 0) || 0x2f6e2b1;
+            return function random() {
+                s = (s * 1664525 + 1013904223) >>> 0;
+                return s / 4294967296;
+            };
+        }
 
-            cols = Math.floor(w / cellSize);
-            rows = Math.floor(h / cellSize);
-
-            // Limit minimum size
-            cols = Math.max(cols, 3);
-            rows = Math.max(rows, 3);
-
-            // Set canvas size
-            canvas.width = cols * cellSize;
-            canvas.height = rows * cellSize;
-
-            // Reset
-            grid = [];
+        function generateCells(cols, rows, random) {
+            const grid = [];
             for (let r = 0; r < rows; r++) {
                 for (let c = 0; c < cols; c++) {
-                    grid.push(new Cell(c, r));
+                    grid.push({ c: c, r: r, walls: [true, true, true, true], visited: false });
                 }
             }
 
-            // Generate
+            const index = (c, r) => (c < 0 || r < 0 || c >= cols || r >= rows) ? -1 : c + r * cols;
+
+            const checkNeighbors = (cell) => {
+                const dirs = [[0, -1], [1, 0], [0, 1], [-1, 0]];
+                const neighbors = [];
+                for (const d of dirs) {
+                    const n = grid[index(cell.c + d[0], cell.r + d[1])];
+                    if (n && !n.visited) neighbors.push(n);
+                }
+                return neighbors.length ? neighbors[Math.floor(random() * neighbors.length)] : null;
+            };
+
+            const removeWalls = (a, b) => {
+                const x = a.c - b.c;
+                const y = a.r - b.r;
+                if (x === 1) { a.walls[3] = false; b.walls[1] = false; }
+                else if (x === -1) { a.walls[1] = false; b.walls[3] = false; }
+                if (y === 1) { a.walls[0] = false; b.walls[2] = false; }
+                else if (y === -1) { a.walls[2] = false; b.walls[0] = false; }
+            };
+
             let current = grid[0];
             current.visited = true;
-            stack = [];
-            let finished = false;
-
-            while (!finished) {
+            const stack = [];
+            for (;;) {
                 const next = checkNeighbors(current);
                 if (next) {
                     next.visited = true;
                     stack.push(current);
                     removeWalls(current, next);
                     current = next;
-                } else if (stack.length > 0) {
+                } else if (stack.length) {
                     current = stack.pop();
                 } else {
-                    finished = true;
-                }
-            }
-
-            // Define Goals
-            startCell = { x: 0, y: 0, w: cellSize, h: cellSize };
-            endCell = { x: (cols - 1) * cellSize, y: (rows - 1) * cellSize, w: cellSize, h: cellSize };
-
-            buildWallRects();
-            clearDrawing();
-        }
-        const generateNewGame = generateMaze;
-
-        function checkNeighbors(cell) {
-            let neighbors = [];
-            const top = grid[index(cell.c, cell.r - 1)];
-            const right = grid[index(cell.c + 1, cell.r)];
-            const bottom = grid[index(cell.c, cell.r + 1)];
-            const left = grid[index(cell.c - 1, cell.r)];
-
-            if (top && !top.visited) neighbors.push(top);
-            if (right && !right.visited) neighbors.push(right);
-            if (bottom && !bottom.visited) neighbors.push(bottom);
-            if (left && !left.visited) neighbors.push(left);
-
-            if (neighbors.length > 0) {
-                return neighbors[Math.floor(Math.random() * neighbors.length)];
-            }
-            return undefined;
-        }
-
-        function removeWalls(a, b) {
-            const x = a.c - b.c;
-            if (x === 1) { a.walls[3] = false; b.walls[1] = false; }
-            else if (x === -1) { a.walls[1] = false; b.walls[3] = false; }
-            const y = a.r - b.r;
-            if (y === 1) { a.walls[0] = false; b.walls[2] = false; }
-            else if (y === -1) { a.walls[2] = false; b.walls[0] = false; }
-        }
-
-        // --- COLLISION SYSTEM ---
-        function buildWallRects() {
-            walls = [];
-            const thickness = 8; // Thicker, nicer walls
-            const offset = thickness / 2;
-
-            // Borders
-            walls.push({ x: 0, y: 0, w: canvas.width, h: thickness });
-            walls.push({ x: 0, y: canvas.height - thickness, w: canvas.width, h: thickness });
-            walls.push({ x: 0, y: 0, w: thickness, h: canvas.height });
-            walls.push({ x: canvas.width - thickness, y: 0, w: thickness, h: canvas.height });
-
-            // Inner Walls
-            for (let i = 0; i < grid.length; i++) {
-                const c = grid[i];
-                const x = c.c * cellSize;
-                const y = c.r * cellSize;
-
-                // Right Wall
-                if (c.walls[1]) {
-                    walls.push({ x: x + cellSize - offset, y: y - offset, w: thickness, h: cellSize + thickness });
-                }
-                // Bottom Wall
-                if (c.walls[2]) {
-                    walls.push({ x: x - offset, y: y + cellSize - offset, w: cellSize + thickness, h: thickness });
-                }
-            }
-        }
-
-        function lineIntersectsRect(p1, p2, rect) {
-            const minX = Math.min(p1.x, p2.x);
-            const maxX = Math.max(p1.x, p2.x);
-            const minY = Math.min(p1.y, p2.y);
-            const maxY = Math.max(p1.y, p2.y);
-
-            // Expand rect slightly for strict collision
-            const padding = 2;
-
-            if (maxX < rect.x + padding || minX > rect.x + rect.w - padding || maxY < rect.y + padding || minY > rect.y + rect.h - padding) {
-                return false;
-            }
-            return true;
-        }
-
-        // --- RENDERER ---
-        function render() {
-            // Background
-            ctx.fillStyle = "#FFFFFF";
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-            // Animation State
-            const time = performance.now() / 1000;
-            const pulse = (Math.sin(time * 3) + 1) / 2; // 0 to 1
-
-            // --- Draw Start Zone ---
-            // Proportional Sizing
-            const padding = cellSize * 0.15; // 15% padding
-            const sx = startCell.x + padding;
-            const sy = startCell.y + padding;
-            const sw = cellSize - (padding * 2);
-            const sh = cellSize - (padding * 2);
-            const scx = startCell.x + cellSize / 2;
-            const scy = startCell.y + cellSize / 2;
-
-            // Pulsing Glow (Underneath)
-            ctx.save();
-            ctx.translate(scx, scy);
-            const startScale = 1 + (pulse * 0.15);
-            ctx.scale(startScale, startScale);
-            ctx.beginPath();
-            ctx.arc(0, 0, (sw / 2), 0, Math.PI * 2); // Use proportional radius
-            ctx.fillStyle = "rgba(52, 199, 89, 0.3)"; // Success color low opacity
-            ctx.fill();
-            ctx.restore();
-
-            // Main Circle
-            ctx.beginPath();
-            ctx.arc(scx, scy, (sw / 2), 0, Math.PI * 2);
-            const gradStart = ctx.createLinearGradient(sx, sy, sx + sw, sy + sh);
-            gradStart.addColorStop(0, '#34C759'); // Apple Success Green
-            gradStart.addColorStop(1, '#248A3D');
-            ctx.fillStyle = gradStart;
-            ctx.shadowColor = "rgba(0,0,0,0.15)"; // Reduced shadow opacity
-            ctx.shadowBlur = padding * 0.5; // Proportional shadow blur
-            ctx.shadowOffsetY = padding * 0.2;
-            ctx.fill();
-            ctx.shadowColor = "transparent"; // Reset shadow
-
-            // Start Icon (Simple White Dot)
-            ctx.beginPath();
-            ctx.arc(scx, scy, cellSize * 0.12, 0, Math.PI * 2); // Slightly smaller dot
-            ctx.fillStyle = "white";
-            ctx.fill();
-
-
-            // --- Draw End Zone ---
-            const ex = endCell.x + padding;
-            const ey = endCell.y + padding;
-            const ew = cellSize - (padding * 2);
-            // eh is same as ew since it's a square cell
-            const ecx = endCell.x + cellSize / 2;
-            const ecy = endCell.y + cellSize / 2;
-
-            // Pulsing Glow
-            ctx.save();
-            ctx.translate(ecx, ecy);
-            const endScale = 1 + (pulse * 0.15);
-            ctx.scale(endScale, endScale);
-            ctx.beginPath();
-            ctx.arc(0, 0, (ew / 2), 0, Math.PI * 2);
-            ctx.fillStyle = "rgba(255, 59, 48, 0.3)"; // Danger color low opacity
-            ctx.fill();
-            ctx.restore();
-
-            // Main Circle
-            ctx.beginPath();
-            ctx.arc(ecx, ecy, (ew / 2), 0, Math.PI * 2);
-            const gradEnd = ctx.createLinearGradient(ex, ey, ex + ew, ey + ew);
-            gradEnd.addColorStop(0, '#FF3B30'); // Apple Danger Red
-            gradEnd.addColorStop(1, '#D70015');
-            ctx.fillStyle = gradEnd;
-            ctx.shadowColor = "rgba(0,0,0,0.15)";
-            ctx.shadowBlur = padding * 0.5;
-            ctx.shadowOffsetY = padding * 0.2;
-            ctx.fill();
-            ctx.shadowColor = "transparent";
-
-            // End Icon (Bullseye Target)
-            // Outer Ring
-            ctx.beginPath();
-            ctx.arc(ecx, ecy, cellSize * 0.22, 0, Math.PI * 2); // Proportional size
-            ctx.strokeStyle = "rgba(255, 255, 255, 0.9)";
-            ctx.lineWidth = cellSize * 0.05; // Proportional line width
-            ctx.stroke();
-
-            // Inner Dot
-            ctx.beginPath();
-            ctx.arc(ecx, ecy, cellSize * 0.08, 0, Math.PI * 2);
-            ctx.fillStyle = "white";
-            ctx.fill();
-
-            // Border Ring for End (Subtle outer rim)
-            ctx.beginPath();
-            ctx.arc(ecx, ecy, (ew / 2), 0, Math.PI * 2);
-            ctx.strokeStyle = "rgba(255,255,255,0.3)";
-            ctx.lineWidth = 2;
-            ctx.stroke();
-
-            // Draw Path with Glow
-            if (userPath.length > 0) {
-                ctx.shadowBlur = 10;
-                ctx.shadowColor = "rgba(0, 122, 255, 0.5)"; // Blue Glow
-                ctx.strokeStyle = "#007AFF";
-                ctx.lineWidth = 6;
-                ctx.lineCap = "round";
-                ctx.lineJoin = "round";
-
-                ctx.beginPath();
-                let active = false;
-                for (let i = 0; i < userPath.length; i++) {
-                    const p = userPath[i];
-                    if (p === null) {
-                        active = false;
-                    } else {
-                        if (!active) {
-                            ctx.moveTo(p.x, p.y);
-                            active = true;
-                        } else {
-                            ctx.lineTo(p.x, p.y);
-                        }
-                    }
-                }
-                ctx.stroke();
-                ctx.shadowBlur = 0;
-            }
-
-            // Draw Walls
-            ctx.fillStyle = "#1D1D1F";
-            walls.forEach(w => {
-                roundRect(ctx, w.x, w.y, w.w, w.h, 4);
-                ctx.fill();
-            });
-
-            // Collision Dots
-            collisionPoints.forEach(p => {
-                ctx.beginPath();
-                ctx.arc(p.x, p.y, 6, 0, Math.PI * 2);
-                ctx.fillStyle = "#FF3B30";
-                ctx.fill();
-                ctx.strokeStyle = "white";
-                ctx.lineWidth = 2;
-                ctx.stroke();
-            });
-        }
-
-        function roundRect(ctx, x, y, w, h, r) {
-            if (w < 2 * r) r = w / 2;
-            if (h < 2 * r) r = h / 2;
-            ctx.beginPath();
-            ctx.moveTo(x + r, y);
-            ctx.arcTo(x + w, y, x + w, y + h, r);
-            ctx.arcTo(x + w, y + h, x, y + h, r);
-            ctx.arcTo(x, y + h, x, y, r);
-            ctx.arcTo(x, y, x + w, y, r);
-            ctx.closePath();
-        }
-
-        // --- INTERACTION ---
-        function getPos(e) {
-            const rect = canvas.getBoundingClientRect();
-            let x = e.clientX || e.touches[0].clientX;
-            let y = e.clientY || e.touches[0].clientY;
-            return { x: x - rect.left, y: y - rect.top };
-        }
-
-        function startDrawing(e) {
-            if (!isGameActive) return;
-            // Ignore touches on UI
-            if (e.target.closest('.controls') || e.target.closest('.top-bar')) return;
-
-            const pos = getPos(e);
-            const leeway = 10;
-
-            // Check if starting at Start Cell
-            const isAtStart = (pos.x >= startCell.x - leeway && pos.x <= startCell.x + startCell.w + leeway &&
-                pos.y >= startCell.y - leeway && pos.y <= startCell.y + startCell.h + leeway);
-
-            // Check if resuming from last point
-            let isResuming = false;
-            if (userPath.length > 0) {
-                const lastPoint = userPath[userPath.length - 1];
-                if (lastPoint) {
-                    const dist = Math.hypot(pos.x - lastPoint.x, pos.y - lastPoint.y);
-                    if (dist < cellSize) {
-                        // Allow resuming within 1 cell size distance
-                        isResuming = true;
-                    }
-                }
-            }
-
-            // Enforcement Logic
-            let canStart = false;
-
-            if (userPath.length === 0) {
-                // First move must be at start
-                if (isAtStart) canStart = true;
-            } else {
-                if (strictMode) {
-                    // Strict Mode: Must always restart from start if you lift your finger
-                    if (isAtStart) {
-                        // If restarting at start, clear old path
-                        userPath = [];
-                        collisionPoints = [];
-                        errorCount = 0;
-                        errorDisplay.innerText = 0;
-                        canStart = true;
-                    }
-                } else {
-                    // Normal Mode: Can resume OR restart
-                    if (isResuming) canStart = true;
-                    if (isAtStart) {
-                        // Optional: Could clear path here too if they want to restart, 
-                        // but for now let's just allow drawing. 
-                        // Better UX: If they go back to start, maybe they want to restart?
-                        // Let's keep it simple: If they touch start, they can draw. 
-                        // If they touch near end of path, they can draw.
-                        canStart = true;
-                    }
-                }
-            }
-
-            if (!canStart) return;
-
-            isDrawing = true;
-            lastPos = pos;
-            if (userPath.length === 0) {
-                userPath.push(lastPos);
-            } else {
-                // If resuming, don't add a gap, just continue
-                // If restarting (jumping back to start), we might want a gap or clear.
-                // For simplicity in this logic:
-                userPath.push(null); // Break line
-                userPath.push(lastPos);
-            }
-
-            if (audioCtx.state === 'suspended') audioCtx.resume();
-            render();
-        }
-
-        function draw(e) {
-            if (!isDrawing || !isGameActive) return;
-            e.preventDefault();
-
-            const currentPos = getPos(e);
-
-            // Wall Collision
-            let hit = false;
-            for (let w of walls) {
-                if (lineIntersectsRect(lastPos, currentPos, w)) {
-                    hit = true;
                     break;
                 }
             }
-
-            if (hit) {
-                handleCollision(currentPos);
-                isDrawing = false;
-                return;
-            }
-
-            // Win Condition
-            if (currentPos.x > endCell.x && currentPos.y > endCell.y) {
-                handleWin();
-                return;
-            }
-
-            userPath.push(currentPos);
-            lastPos = currentPos;
-            requestAnimationFrame(render);
+            return grid;
         }
 
-        function stopDrawing() {
-            isDrawing = false;
+        function buildWallData(cols, rows, cellSize, grid, thickness) {
+            const offset = thickness / 2;
+            const walls = [];
+            const refs = [];
+            for (let r = 0; r < rows; r++) {
+                const row = [];
+                for (let c = 0; c < cols; c++) row.push({ top: null, right: null, bottom: null, left: null });
+                refs.push(row);
+            }
+
+            const borders = [
+                { x: 0, y: 0, w: cols * cellSize, h: thickness },
+                { x: 0, y: rows * cellSize - thickness, w: cols * cellSize, h: thickness },
+                { x: 0, y: 0, w: thickness, h: rows * cellSize },
+                { x: cols * cellSize - thickness, y: 0, w: thickness, h: rows * cellSize }
+            ];
+            for (let c = 0; c < cols; c++) {
+                refs[0][c].top = borders[0];
+                refs[rows - 1][c].bottom = borders[1];
+            }
+            for (let r = 0; r < rows; r++) {
+                refs[r][0].left = borders[2];
+                refs[r][cols - 1].right = borders[3];
+            }
+            walls.push.apply(walls, borders);
+
+            for (let i = 0; i < grid.length; i++) {
+                const cell = grid[i];
+                const x = cell.c * cellSize;
+                const y = cell.r * cellSize;
+                if (cell.walls[1]) {
+                    const w = { x: x + cellSize - offset, y: y - offset, w: thickness, h: cellSize + thickness };
+                    walls.push(w);
+                    refs[cell.r][cell.c].right = w;
+                    if (cell.c + 1 < cols) refs[cell.r][cell.c + 1].left = w;
+                }
+                if (cell.walls[2]) {
+                    const w = { x: x - offset, y: y + cellSize - offset, w: cellSize + thickness, h: thickness };
+                    walls.push(w);
+                    refs[cell.r][cell.c].bottom = w;
+                    if (cell.r + 1 < rows) refs[cell.r + 1][cell.c].top = w;
+                }
+            }
+            return { walls: walls, refs: refs };
+        }
+
+        // ============ PURE STATE MACHINE ============
+        const TRANSITIONS = Object.freeze({
+            [STATE.IDLE]: [STATE.DRAWING],
+            [STATE.DRAWING]: [STATE.PAUSED, STATE.COLLIDED, STATE.WON],
+            [STATE.PAUSED]: [STATE.DRAWING],
+            [STATE.COLLIDED]: [STATE.DRAWING],
+            [STATE.WON]: []
+        });
+
+        function canTransition(from, to) {
+            return !!TRANSITIONS[from] && TRANSITIONS[from].indexOf(to) !== -1;
+        }
+
+        function evaluateStartAction(opts) {
+            const hasPath = opts.hasPath;
+            const isAtStart = opts.isAtStart;
+            const isNearResume = opts.isNearResume;
+            const resumeSegmentSafe = opts.resumeSegmentSafe;
+            const strictMode = opts.strictMode;
+            if (!hasPath) return isAtStart ? 'start' : 'reject';
+            if (strictMode) return isAtStart ? 'restart' : 'reject';
+            if (isAtStart) return 'restart';
+            if (isNearResume && resumeSegmentSafe) return 'resume';
+            return 'reject';
+        }
+
+        function isPrimaryPointerAllowed(pointerType, isPrimary, button) {
+            const btn = button || 0;
+            if (pointerType === 'touch') return isPrimary === true && btn === 0;
+            return btn === 0;
+        }
+
+        // ============ PURE LAYOUT ============
+        function computeLayout(availW, availH, difficulty, cfg) {
+            const w = Math.max(availW - cfg.LAYOUT_MARGIN * 2, cfg.MIN_VIEWPORT);
+            const h = Math.max(availH - cfg.LAYOUT_MARGIN * 2, cfg.MIN_VIEWPORT);
+            const target = Math.floor(Math.min(w, h) / (difficulty / 2 + 5));
+            const cellSize = clamp(target, cfg.MIN_CELL, cfg.MAX_CELL);
+            const cols = clamp(Math.floor(w / cellSize), cfg.MIN_DIM, cfg.MAX_COLS);
+            const rows = clamp(Math.floor(h / cellSize), cfg.MIN_DIM, cfg.MAX_ROWS);
+            return { cellSize: cellSize, cols: cols, rows: rows, logicalW: cols * cellSize, logicalH: rows * cellSize };
+        }
+
+        // ============ DOM REFS ============
+        const container = document.getElementById('game-container');
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const bgCanvas = document.createElement('canvas');
+        const bgCtx = bgCanvas.getContext('2d');
+        const dynCanvas = document.createElement('canvas');
+        const dynCtx = dynCanvas.getContext('2d');
+
+        const errorDisplay = document.getElementById('error-count');
+        const finalErrors = document.getElementById('final-errors');
+        const flashOverlay = document.getElementById('flash');
+        const hoverInd = document.getElementById('hoverInd');
+        const difficultyTrigger = document.getElementById('difficultyTrigger');
+        const difficultyMenu = document.getElementById('difficultyMenu');
+        const difficultyLabel = document.getElementById('difficultyLabel');
+        const menuItems = Array.prototype.slice.call(document.querySelectorAll('.dropdown-item[data-difficulty]'));
+        const strictToggle = document.getElementById('strictModeToggle');
+        const soundBtn = document.getElementById('soundBtn');
+        const iconSoundOn = document.getElementById('icon-sound-on');
+        const iconSoundOff = document.getElementById('icon-sound-off');
+        const newMazeBtn = document.getElementById('newMazeBtn');
+        const clearBtn = document.getElementById('clearBtn');
+        const successModal = document.getElementById('successModal');
+        const playAgainBtn = document.getElementById('playAgainBtn');
+        const statusRegion = document.getElementById('statusRegion');
+        const debugPanel = document.getElementById('debugPanel');
+        const debugOutput = document.getElementById('debugOutput');
+        const debugCopy = document.getElementById('debugCopy');
+        const debugClear = document.getElementById('debugClear');
+
+        // ============ GAME STATE ============
+        let cols = 0, rows = 0, cellSize = 0, logicalW = 0, logicalH = 0, renderScale = 1;
+        let grid = [], walls = [], wallByCell = null;
+        let startCell = { x: 0, y: 0 };
+        let endCell = { x: 0, y: 0 };
+        let userPath = [];
+        let collisionPoints = [];
+        let lastSample = null;
+        let lastStored = null;
+        let errorCount = 0;
+        let currentState = STATE.IDLE;
+        let activePointerId = null;
+        let currentDifficulty = 20;
+        let strictMode = false;
+        let isMuted = false;
+        let audioCtx = null;
+        let soundSupported = true;
+        let modalOpen = false;
+        let lastFocused = null;
+        let renderPending = true;
+        let flashTimer = null;
+        let shakeTimer = null;
+        let resizeTimer = null;
+        let reducedMotion = false;
+        let debugBuffer = [];
+        let debugDirty = false;
+
+        const queryParams = new URLSearchParams(window.location.search);
+        const DEBUG = queryParams.has('debug');
+        const SELFTEST = queryParams.has('selftest');
+
+        // ============ REDUCED MOTION ============
+        const reducedMotionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+        reducedMotion = reducedMotionQuery.matches;
+        if (typeof reducedMotionQuery.addEventListener === 'function') {
+            reducedMotionQuery.addEventListener('change', function (e) { reducedMotion = e.matches; });
+        }
+
+        // ============ STATE HELPERS ============
+        function setState(next) {
+            if (currentState === next) return true;
+            if (!canTransition(currentState, next)) {
+                console.warn('Illegal state transition', currentState, '->', next);
+                return false;
+            }
+            const previous = currentState;
+            currentState = next;
+            debugLog({ type: 'state', from: previous, to: next });
+            renderPending = true;
+            return true;
+        }
+
+        function forceState(next) {
+            currentState = next;
+            renderPending = true;
+        }
+
+        function updateErrorDisplay() {
+            errorDisplay.textContent = String(errorCount);
+        }
+
+        function announce(message) {
+            statusRegion.textContent = message;
+        }
+
+        // ============ GEOMETRY HELPERS (stateful) ============
+        function toLogical(clientX, clientY) {
+            const rect = canvas.getBoundingClientRect();
+            return cssToLogical(clientX, clientY, rect, canvas.width, canvas.height, renderScale);
+        }
+
+        function clampSample(p) {
+            return clampPoint(p, logicalW, logicalH);
+        }
+
+        function getStartCenter() {
+            return { x: startCell.x + cellSize / 2, y: startCell.y + cellSize / 2 };
+        }
+
+        function getEndCenter() {
+            return { x: endCell.x + cellSize / 2, y: endCell.y + cellSize / 2 };
+        }
+
+        function getTargetRadius() {
+            const padding = cellSize * 0.15;
+            const sw = cellSize - padding * 2;
+            return (sw / 2) * CONFIG.TARGET_TOLERANCE;
+        }
+
+        function isInStartZone(pos) {
+            const leeway = CONFIG.START_LEEWAY;
+            return pos.x >= startCell.x - leeway && pos.x <= startCell.x + cellSize + leeway &&
+                pos.y >= startCell.y - leeway && pos.y <= startCell.y + cellSize + leeway;
+        }
+
+        function sweptCollide(p1, p2) {
+            if (!wallByCell || cellSize <= 0) return false;
+            const margin = CONFIG.PATH_RADIUS + 2;
+            const c0 = Math.max(0, Math.floor((Math.min(p1.x, p2.x) - margin) / cellSize));
+            const c1 = Math.min(cols - 1, Math.floor((Math.max(p1.x, p2.x) + margin) / cellSize));
+            const r0 = Math.max(0, Math.floor((Math.min(p1.y, p2.y) - margin) / cellSize));
+            const r1 = Math.min(rows - 1, Math.floor((Math.max(p1.y, p2.y) + margin) / cellSize));
+            const seen = new Set();
+            for (let r = r0; r <= r1; r++) {
+                const row = wallByCell[r];
+                for (let c = c0; c <= c1; c++) {
+                    const cellRefs = row[c];
+                    if (cellRefs.top && !seen.has(cellRefs.top)) {
+                        seen.add(cellRefs.top);
+                        if (segmentIntersectsExpandedRect(p1, p2, cellRefs.top, CONFIG.PATH_RADIUS)) return true;
+                    }
+                    if (cellRefs.right && !seen.has(cellRefs.right)) {
+                        seen.add(cellRefs.right);
+                        if (segmentIntersectsExpandedRect(p1, p2, cellRefs.right, CONFIG.PATH_RADIUS)) return true;
+                    }
+                    if (cellRefs.bottom && !seen.has(cellRefs.bottom)) {
+                        seen.add(cellRefs.bottom);
+                        if (segmentIntersectsExpandedRect(p1, p2, cellRefs.bottom, CONFIG.PATH_RADIUS)) return true;
+                    }
+                    if (cellRefs.left && !seen.has(cellRefs.left)) {
+                        seen.add(cellRefs.left);
+                        if (segmentIntersectsExpandedRect(p1, p2, cellRefs.left, CONFIG.PATH_RADIUS)) return true;
+                    }
+                }
+            }
+            return false;
+        }
+
+        // ============ LAYOUT / RESIZE ============
+        function applyLayout(layout) {
+            cellSize = layout.cellSize;
+            cols = layout.cols;
+            rows = layout.rows;
+            logicalW = layout.logicalW;
+            logicalH = layout.logicalH;
+            const dpr = Math.min(window.devicePixelRatio || 1, CONFIG.DPR_CAP);
+            renderScale = dpr;
+            canvas.width = Math.round(logicalW * renderScale);
+            canvas.height = Math.round(logicalH * renderScale);
+            canvas.style.width = logicalW + 'px';
+            canvas.style.height = logicalH + 'px';
+            bgCanvas.width = canvas.width;
+            bgCanvas.height = canvas.height;
+            dynCanvas.width = canvas.width;
+            dynCanvas.height = canvas.height;
+        }
+
+        function generateMaze(seed) {
+            const rect = container.getBoundingClientRect();
+            const layout = computeLayout(rect.width, rect.height, currentDifficulty, CONFIG);
+            applyLayout(layout);
+
+            const rng = seed === undefined ? Math.random : makeRng(seed);
+            grid = generateCells(cols, rows, rng);
+            startCell = { x: 0, y: 0 };
+            endCell = { x: (cols - 1) * cellSize, y: (rows - 1) * cellSize };
+            const wallData = buildWallData(cols, rows, cellSize, grid, CONFIG.WALL_THICKNESS);
+            walls = wallData.walls;
+            wallByCell = wallData.refs;
+
+            renderStaticLayer();
+            resetRun();
+        }
+
+        function generateNewGame() {
+            generateMaze();
+            announce('New maze generated.');
+        }
+
+        function onResizeDebounced() {
+            if (document.hidden) return;
+            generateMaze();
+            announce('The maze was regenerated to fit the new window size.');
+        }
+
+        function resetRun() {
+            userPath = [];
+            collisionPoints = [];
+            errorCount = 0;
+            lastSample = null;
+            lastStored = null;
+            releaseCapture();
+            activePointerId = null;
+            updateErrorDisplay();
+            hideModal();
+            hideHover();
+            forceState(STATE.IDLE);
+            renderPending = true;
+        }
+
+        // ============ STATIC RENDER LAYER ============
+        function roundRect(c, x, y, w, h, r) {
+            if (w < 2 * r) r = w / 2;
+            if (h < 2 * r) r = h / 2;
+            c.beginPath();
+            c.moveTo(x + r, y);
+            c.arcTo(x + w, y, x + w, y + h, r);
+            c.arcTo(x + w, y + h, x, y + h, r);
+            c.arcTo(x, y + h, x, y, r);
+            c.arcTo(x, y, x + w, y, r);
+            c.closePath();
+        }
+
+        function drawStartZoneStatic(c) {
+            const padding = cellSize * 0.15;
+            const sx = startCell.x + padding;
+            const sy = startCell.y + padding;
+            const sw = cellSize - padding * 2;
+            const scx = startCell.x + cellSize / 2;
+            const scy = startCell.y + cellSize / 2;
+
+            c.beginPath();
+            c.arc(scx, scy, sw / 2, 0, Math.PI * 2);
+            const grad = c.createLinearGradient(sx, sy, sx + sw, sy + sw);
+            grad.addColorStop(0, '#34C759');
+            grad.addColorStop(1, '#248A3D');
+            c.fillStyle = grad;
+            c.shadowColor = 'rgba(0,0,0,0.15)';
+            c.shadowBlur = padding * 0.5;
+            c.shadowOffsetY = padding * 0.2;
+            c.fill();
+            c.shadowColor = 'transparent';
+            c.shadowBlur = 0;
+            c.shadowOffsetY = 0;
+
+            c.beginPath();
+            c.arc(scx, scy, cellSize * 0.12, 0, Math.PI * 2);
+            c.fillStyle = 'white';
+            c.fill();
+        }
+
+        function drawEndZoneStatic(c) {
+            const padding = cellSize * 0.15;
+            const ex = endCell.x + padding;
+            const ey = endCell.y + padding;
+            const ew = cellSize - padding * 2;
+            const ecx = endCell.x + cellSize / 2;
+            const ecy = endCell.y + cellSize / 2;
+
+            c.beginPath();
+            c.arc(ecx, ecy, ew / 2, 0, Math.PI * 2);
+            const grad = c.createLinearGradient(ex, ey, ex + ew, ey + ew);
+            grad.addColorStop(0, '#FF3B30');
+            grad.addColorStop(1, '#D70015');
+            c.fillStyle = grad;
+            c.shadowColor = 'rgba(0,0,0,0.15)';
+            c.shadowBlur = padding * 0.5;
+            c.shadowOffsetY = padding * 0.2;
+            c.fill();
+            c.shadowColor = 'transparent';
+            c.shadowBlur = 0;
+            c.shadowOffsetY = 0;
+
+            c.beginPath();
+            c.arc(ecx, ecy, cellSize * 0.22, 0, Math.PI * 2);
+            c.strokeStyle = 'rgba(255,255,255,0.9)';
+            c.lineWidth = cellSize * 0.05;
+            c.stroke();
+
+            c.beginPath();
+            c.arc(ecx, ecy, cellSize * 0.08, 0, Math.PI * 2);
+            c.fillStyle = 'white';
+            c.fill();
+
+            c.beginPath();
+            c.arc(ecx, ecy, ew / 2, 0, Math.PI * 2);
+            c.strokeStyle = 'rgba(255,255,255,0.3)';
+            c.lineWidth = 2;
+            c.stroke();
+        }
+
+        function renderStaticLayer() {
+            bgCtx.setTransform(renderScale, 0, 0, renderScale, 0, 0);
+            bgCtx.clearRect(0, 0, logicalW, logicalH);
+            bgCtx.fillStyle = '#FFFFFF';
+            bgCtx.fillRect(0, 0, logicalW, logicalH);
+            bgCtx.fillStyle = '#1D1D1F';
+            for (let i = 0; i < walls.length; i++) {
+                const w = walls[i];
+                roundRect(bgCtx, w.x, w.y, w.w, w.h, 4);
+                bgCtx.fill();
+            }
+            drawStartZoneStatic(bgCtx);
+            drawEndZoneStatic(bgCtx);
+        }
+
+        // ============ DYNAMIC RENDER LAYER ============
+        function drawPulse(t) {
+            const pulse = (Math.sin(t * 3) + 1) / 2;
+            const padding = cellSize * 0.15;
+            const baseR = (cellSize - padding * 2) / 2;
+            const scale = 1 + pulse * 0.15;
+            const lineWidth = 6 * (0.4 + pulse);
+
+            const sc = getStartCenter();
+            ctx.beginPath();
+            ctx.arc(sc.x, sc.y, baseR * scale, 0, Math.PI * 2);
+            ctx.strokeStyle = 'rgba(52,199,89,0.4)';
+            ctx.lineWidth = lineWidth;
+            ctx.stroke();
+
+            const ec = getEndCenter();
+            ctx.beginPath();
+            ctx.arc(ec.x, ec.y, baseR * scale, 0, Math.PI * 2);
+            ctx.strokeStyle = 'rgba(255,59,48,0.4)';
+            ctx.stroke();
+        }
+
+        function drawDynamic() {
+            dynCtx.setTransform(renderScale, 0, 0, renderScale, 0, 0);
+            dynCtx.clearRect(0, 0, logicalW, logicalH);
+
+            if (userPath.length > 0) {
+                dynCtx.lineCap = 'round';
+                dynCtx.lineJoin = 'round';
+                dynCtx.strokeStyle = '#007AFF';
+                dynCtx.lineWidth = CONFIG.PATH_WIDTH;
+                dynCtx.shadowBlur = 10;
+                dynCtx.shadowColor = 'rgba(0,122,255,0.5)';
+                dynCtx.beginPath();
+                dynCtx.moveTo(userPath[0].x, userPath[0].y);
+                for (let i = 1; i < userPath.length; i++) {
+                    dynCtx.lineTo(userPath[i].x, userPath[i].y);
+                }
+                dynCtx.stroke();
+                dynCtx.shadowBlur = 0;
+                dynCtx.shadowColor = 'transparent';
+            }
+
+            for (let i = 0; i < collisionPoints.length; i++) {
+                const p = collisionPoints[i];
+                dynCtx.beginPath();
+                dynCtx.arc(p.x, p.y, 6, 0, Math.PI * 2);
+                dynCtx.fillStyle = '#FF3B30';
+                dynCtx.fill();
+                dynCtx.strokeStyle = 'white';
+                dynCtx.lineWidth = 2;
+                dynCtx.stroke();
+            }
+        }
+
+        function trimPath() {
+            if (userPath.length <= CONFIG.MAX_PATH_POINTS) return;
+            const next = [];
+            for (let i = 0; i < userPath.length; i += 2) next.push(userPath[i]);
+            if (next.length >= userPath.length) next.pop();
+            userPath = next;
+            lastStored = userPath.length ? userPath[userPath.length - 1] : null;
+        }
+
+        // ============ ANIMATION LOOP ============
+        function frame(now) {
+            requestAnimationFrame(frame);
+            if (!ctx || logicalW <= 0 || logicalH <= 0) return;
+
+            if (renderPending) {
+                drawDynamic();
+                renderPending = false;
+            }
+
+            ctx.setTransform(renderScale, 0, 0, renderScale, 0, 0);
+            ctx.drawImage(bgCanvas, 0, 0, logicalW, logicalH);
+            if (!reducedMotion) drawPulse(now / 1000);
+            ctx.drawImage(dynCanvas, 0, 0, logicalW, logicalH);
+
+            if (DEBUG && debugDirty) {
+                renderDebugPanel();
+                debugDirty = false;
+            }
+        }
+
+        // ============ INPUT: POINTER EVENTS ============
+        function capturePointer(e) {
+            try { canvas.setPointerCapture(e.pointerId); } catch (err) { }
+        }
+
+        function releaseCapture() {
+            if (activePointerId !== null) {
+                try { canvas.releasePointerCapture(activePointerId); } catch (err) { }
+            }
+        }
+
+        function coalescedSamples(e) {
+            if (typeof e.getCoalescedEvents === 'function') {
+                try {
+                    const list = e.getCoalescedEvents();
+                    if (list && list.length) return list;
+                } catch (err) { }
+            }
+            return [e];
+        }
+
+        function getStartRejectMessage(hasPath, strict, isAtStart) {
+            if (!hasPath) return 'Start from the green circle.';
+            if (strict) return 'Strict mode is on: start or restart from the green circle.';
+            if (isAtStart) return '';
+            return 'Resume near the end of your path, or restart from the green circle.';
+        }
+
+        function onPointerDown(e) {
+            ensureAudio();
+            if (currentState === STATE.WON || modalOpen) return;
+            if (activePointerId !== null) return;
+            if (!isPrimaryPointerAllowed(e.pointerType, e.isPrimary, e.button)) return;
+            if (e.buttons === 0) return;
+
+            const pos = clampSample(toLogical(e.clientX, e.clientY));
+            const hasPath = userPath.length > 0;
+            const isAtStart = isInStartZone(pos);
+            const isNearResume = hasPath && lastSample !== null &&
+                dist(pos, lastSample) < cellSize * CONFIG.RESUME_TOLERANCE_CELLS;
+            const resumeSegmentSafe = isNearResume && !sweptCollide(lastSample, pos);
+            const action = evaluateStartAction({ hasPath: hasPath, isAtStart: isAtStart, isNearResume: isNearResume, resumeSegmentSafe: resumeSegmentSafe, strictMode: strictMode });
+
+            if (action === 'reject') {
+                const msg = getStartRejectMessage(hasPath, strictMode, isAtStart);
+                if (msg) announce(msg);
+                return;
+            }
+
+            if (action === 'restart') {
+                userPath = [];
+                collisionPoints = [];
+                errorCount = 0;
+                updateErrorDisplay();
+                announce('Restarting from the start.');
+            }
+
+            activePointerId = e.pointerId;
+            capturePointer(e);
+            lastSample = pos;
+            lastStored = pos;
+            userPath.push(pos);
+            trimPath();
+
+            setState(STATE.DRAWING);
+            updateHover(e);
+            renderPending = true;
+            debugLog({
+                type: e.type, pointerType: e.pointerType, pointerId: e.pointerId,
+                isPrimary: e.isPrimary, button: e.button, buttons: e.buttons,
+                pressure: e.pressure, x: pos.x, y: pos.y, action: action
+            });
+        }
+
+        function onPointerMove(e) {
+            updateHover(e);
+            if (e.pointerId !== activePointerId) return;
+            if (currentState !== STATE.DRAWING) return;
+
+            const samples = coalescedSamples(e);
+            for (let i = 0; i < samples.length; i++) {
+                const s = samples[i];
+                const pos = clampSample(toLogical(s.clientX, s.clientY));
+                if (lastSample !== null && pos.x === lastSample.x && pos.y === lastSample.y) continue;
+                if (lastSample !== null && sweptCollide(lastSample, pos)) {
+                    handleCollision(pos);
+                    return;
+                }
+                if (lastSample !== null && segmentHitsCircle(lastSample, pos, getEndCenter(), getTargetRadius())) {
+                    lastSample = pos;
+                    handleWin();
+                    return;
+                }
+                lastSample = pos;
+                if (dist(pos, lastStored) >= CONFIG.MIN_STORE_DIST) {
+                    userPath.push(pos);
+                    lastStored = pos;
+                    trimPath();
+                }
+                renderPending = true;
+                debugLog({
+                    type: 'pointermove', pointerType: s.pointerType, pointerId: s.pointerId,
+                    isPrimary: s.isPrimary, button: s.button, buttons: s.buttons,
+                    pressure: s.pressure, x: pos.x, y: pos.y
+                });
+            }
+        }
+
+        function onPointerUp(e) {
+            if (e.pointerId !== activePointerId) return;
+            endActivePointer('up');
+        }
+
+        function onPointerCancel(e) {
+            if (e.pointerId !== activePointerId) return;
+            endActivePointer('cancel');
+        }
+
+        function onLostPointerCapture(e) {
+            if (e.pointerId !== activePointerId) return;
+            endActivePointer('lost');
+        }
+
+        function endActivePointer(reason) {
+            if (activePointerId === null) return;
+            if (currentState === STATE.DRAWING) setState(STATE.PAUSED);
+            releaseCapture();
+            activePointerId = null;
+            renderPending = true;
+            debugLog({ type: 'end', reason: reason, state: currentState });
+            if (strictMode && (currentState === STATE.PAUSED || currentState === STATE.COLLIDED)) {
+                announce('Strict mode: any lift or interruption requires restarting from the green circle.');
+            }
         }
 
         function handleCollision(pos) {
             errorCount++;
-            errorDisplay.innerText = errorCount;
+            updateErrorDisplay();
             collisionPoints.push(pos);
-
-            flashOverlay.style.opacity = '0.3';
-            container.classList.add('shake-screen');
+            if (!reducedMotion) {
+                flashOn();
+                shakeOn();
+            }
             playBuzzSound();
-            render();
-
-            setTimeout(() => {
-                flashOverlay.style.opacity = '0';
-                container.classList.remove('shake-screen');
-            }, 300);
+            setState(STATE.COLLIDED);
+            renderPending = true;
+            announce('Collision. Errors: ' + errorCount + '.');
+            if (strictMode) announce('Strict mode: return to the start to try again.');
+            debugLog({ type: 'collision', x: pos.x, y: pos.y, errors: errorCount });
         }
 
         function handleWin() {
-            isGameActive = false;
-            isDrawing = false;
-            render();
+            setState(STATE.WON);
+            releaseCapture();
+            activePointerId = null;
+            playWinSound();
+            updateErrorDisplay();
+            finalErrors.textContent = String(errorCount);
+            announce('Maze clear! ' + errorCount + ' error' + (errorCount === 1 ? '' : 's') + '.');
+            showModal();
+            renderPending = true;
+        }
 
-            if (!isMuted) {
-                const osc = audioCtx.createOscillator();
-                const gain = audioCtx.createGain();
-                osc.type = 'sine';
+        // ============ INPUT: LEGACY ADAPTER ============
+        function pseudoPointer(type, e, touch, buttons) {
+            const x = touch ? touch.clientX : e.clientX;
+            const y = touch ? touch.clientY : e.clientY;
+            return {
+                pointerType: type,
+                pointerId: type === 'touch' ? touch.identifier : 1,
+                isPrimary: true,
+                button: 0,
+                buttons: buttons,
+                clientX: x,
+                clientY: y,
+                pressure: 0.5
+            };
+        }
 
-                const now = audioCtx.currentTime;
-                osc.frequency.setValueAtTime(523.25, now);
-                osc.frequency.setValueAtTime(659.25, now + 0.1);
-                osc.frequency.setValueAtTime(783.99, now + 0.2);
-                osc.frequency.setValueAtTime(1046.50, now + 0.3);
+        function bindLegacyInput() {
+            let legacyTouchId = null;
+            const touchId = (id) => { legacyTouchId = id; };
+            canvas.addEventListener('mousedown', function (e) {
+                onPointerDown(pseudoPointer('mouse', e, null, 1));
+            });
+            canvas.addEventListener('mousemove', function (e) {
+                onPointerMove(pseudoPointer('mouse', e, null, e.buttons));
+            });
+            canvas.addEventListener('mouseup', function () {
+                onPointerUp(pseudoPointer('mouse', { clientX: 0, clientY: 0 }, null, 0));
+            });
+            canvas.addEventListener('mouseout', function () {
+                if (currentState === STATE.DRAWING) endActivePointer('mouseout');
+            });
+            canvas.addEventListener('touchstart', function (e) {
+                e.preventDefault();
+                if (legacyTouchId !== null) return;
+                if (!e.touches.length) return;
+                const t = e.touches[0];
+                touchId(t.identifier);
+                onPointerDown(pseudoPointer('touch', e, t, 1));
+            }, { passive: false });
+            canvas.addEventListener('touchmove', function (e) {
+                e.preventDefault();
+                for (let i = 0; i < e.touches.length; i++) {
+                    if (e.touches[i].identifier === legacyTouchId) {
+                        onPointerMove(pseudoPointer('touch', e, e.touches[i], 1));
+                    }
+                }
+            }, { passive: false });
+            canvas.addEventListener('touchend', function (e) {
+                e.preventDefault();
+                for (let i = 0; i < e.changedTouches.length; i++) {
+                    if (e.changedTouches[i].identifier === legacyTouchId) {
+                        touchId(null);
+                        onPointerUp(pseudoPointer('touch', e, e.changedTouches[i], 0));
+                    }
+                }
+            }, { passive: false });
+            canvas.addEventListener('touchcancel', function () {
+                if (legacyTouchId !== null) {
+                    touchId(null);
+                    endActivePointer('cancel');
+                }
+            });
+            window.addEventListener('blur', function () { endActivePointer('blur'); });
+            document.addEventListener('visibilitychange', function () {
+                if (document.hidden) endActivePointer('hide');
+            });
+        }
 
-                gain.gain.setValueAtTime(0.1, now);
-                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.6);
+        function bindPointerInput() {
+            canvas.addEventListener('pointerdown', onPointerDown);
+            canvas.addEventListener('pointermove', onPointerMove);
+            canvas.addEventListener('pointerup', onPointerUp);
+            canvas.addEventListener('pointercancel', onPointerCancel);
+            canvas.addEventListener('lostpointercapture', onLostPointerCapture);
+            canvas.addEventListener('pointerleave', function () {
+                if (currentState !== STATE.DRAWING) hideHover();
+            });
+            window.addEventListener('blur', function () { endActivePointer('blur'); });
+            document.addEventListener('visibilitychange', function () {
+                if (document.hidden) endActivePointer('hide');
+            });
+            canvas.addEventListener('contextmenu', function (e) { e.preventDefault(); });
+        }
 
-                osc.connect(gain);
-                gain.connect(audioCtx.destination);
-                osc.start();
-                osc.stop(now + 0.6);
+        function bindInput() {
+            if (typeof window.PointerEvent === 'function') {
+                bindPointerInput();
+            } else {
+                bindLegacyInput();
             }
+        }
 
-            document.getElementById('final-errors').innerText = errorCount;
-            document.getElementById('successModal').classList.add('show');
+        // ============ HOVER INDICATOR ============
+        function updateHover(e) {
+            if (e.pointerType === 'touch') { hideHover(); return; }
+            if (currentState === STATE.WON || modalOpen) { hideHover(); return; }
+            const pos = clampSample(toLogical(e.clientX, e.clientY));
+            hoverInd.style.opacity = '1';
+            hoverInd.style.transform = 'translate(' + e.clientX + 'px, ' + e.clientY + 'px) translate(-50%, -50%)';
+            let stateClass = 'idle';
+            if (currentState === STATE.DRAWING) stateClass = 'drawing';
+            else if (currentState === STATE.COLLIDED) stateClass = 'collided';
+            else if (currentState === STATE.PAUSED) stateClass = 'paused';
+            else if (isInStartZone(pos)) stateClass = 'start';
+            hoverInd.dataset.state = stateClass;
+        }
+
+        function hideHover() {
+            hoverInd.style.opacity = '0';
+        }
+
+        // ============ AUDIO (lazy) ============
+        function ensureAudio() {
+            if (audioCtx) {
+                if (audioCtx.state === 'suspended') {
+                    try { audioCtx.resume(); } catch (err) { }
+                }
+                return;
+            }
+            try {
+                const AC = window.AudioContext || window.webkitAudioContext;
+                if (!AC) {
+                    soundSupported = false;
+                    soundBtn.disabled = true;
+                    soundBtn.title = 'Audio is not supported in this browser';
+                    return;
+                }
+                audioCtx = new AC();
+            } catch (err) {
+                soundSupported = false;
+                soundBtn.disabled = true;
+                soundBtn.title = 'Audio could not be initialized';
+            }
         }
 
         function playBuzzSound() {
-            if (isMuted) return;
+            if (isMuted || !audioCtx || audioCtx.state !== 'running') return;
             try {
                 const osc = audioCtx.createOscillator();
                 const gain = audioCtx.createGain();
                 osc.type = 'sawtooth';
                 osc.frequency.value = 60;
-
                 const now = audioCtx.currentTime;
                 gain.gain.setValueAtTime(0.15, now);
                 gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
-
                 osc.connect(gain);
                 gain.connect(audioCtx.destination);
                 osc.start();
                 osc.stop(now + 0.2);
-            } catch (e) { }
+            } catch (err) { }
         }
 
-        // --- UI UTILS ---
-        function toggleDropdown(e) {
-            e.stopPropagation();
-            const menu = document.getElementById('difficultyMenu');
-            menu.classList.toggle('show');
+        function playWinSound() {
+            if (isMuted) return;
+            ensureAudio();
+            if (!audioCtx || audioCtx.state !== 'running') return;
+            try {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'sine';
+                const now = audioCtx.currentTime;
+                osc.frequency.setValueAtTime(523.25, now);
+                osc.frequency.setValueAtTime(659.25, now + 0.1);
+                osc.frequency.setValueAtTime(783.99, now + 0.2);
+                osc.frequency.setValueAtTime(1046.50, now + 0.3);
+                gain.gain.setValueAtTime(0.1, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.6);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start();
+                osc.stop(now + 0.6);
+            } catch (err) { }
         }
 
-        function closeDropdown(e) {
-            const menu = document.getElementById('difficultyMenu');
-            if (menu.classList.contains('show')) {
-                menu.classList.remove('show');
+        // ============ FEEDBACK (flash / shake) ============
+        function flashOn() {
+            flashOverlay.style.opacity = '0.3';
+            clearTimeout(flashTimer);
+            flashTimer = setTimeout(function () { flashOverlay.style.opacity = '0'; }, 300);
+        }
+
+        function shakeOn() {
+            container.classList.add('shake-screen');
+            clearTimeout(shakeTimer);
+            shakeTimer = setTimeout(function () { container.classList.remove('shake-screen'); }, 300);
+        }
+
+        // ============ DIFFICULTY MENU ============
+        function toggleDropdown() {
+            const open = difficultyMenu.classList.contains('show');
+            closeDropdown();
+            if (!open) {
+                difficultyMenu.classList.add('show');
+                difficultyTrigger.setAttribute('aria-expanded', 'true');
             }
         }
 
-        function setDifficulty(value, label) {
+        function closeDropdown() {
+            difficultyMenu.classList.remove('show');
+            difficultyTrigger.setAttribute('aria-expanded', 'false');
+        }
+
+        function selectDifficulty(value) {
+            const label = CONFIG.DIFFICULTIES[value];
+            if (!label) return;
             currentDifficulty = value;
-            document.getElementById('difficultyLabel').innerText = label;
-
-            // Update Active State
-            const items = document.querySelectorAll('.dropdown-item');
-            items.forEach(item => {
-                if (item.id === 'strictModeToggle') return; // Skip strict toggle
-
-                // Reset styling
-                item.classList.remove('active');
-                if (item.querySelector('.check-icon')) {
-                    item.querySelector('.check-icon').remove();
-                }
-
-                // Set active if matches
-                if (item.innerText.includes(label)) {
-                    item.classList.add('active');
-                    item.innerHTML += `<svg class="check-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
-                }
-            });
-
-            generateNewGame();
+            difficultyLabel.textContent = label;
+            for (let i = 0; i < menuItems.length; i++) {
+                const item = menuItems[i];
+                const active = Number(item.dataset.difficulty) === value;
+                item.classList.toggle('active', active);
+                item.setAttribute('aria-checked', String(active));
+                const check = item.querySelector('.check-icon');
+                if (check) check.hidden = !active;
+            }
+            closeDropdown();
+            generateMaze();
+            announce('Difficulty set to ' + label + '. New maze generated.');
         }
 
         function toggleStrict() {
             strictMode = !strictMode;
-            const item = document.getElementById('strictModeToggle');
-            if (strictMode) {
-                item.classList.add('active');
-                if (!item.querySelector('.check-icon')) {
-                    item.innerHTML += `<svg class="check-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
-                }
-            } else {
-                item.classList.remove('active');
-                if (item.querySelector('.check-icon')) {
-                    item.querySelector('.check-icon').remove();
-                }
-            }
+            strictToggle.classList.toggle('active', strictMode);
+            strictToggle.setAttribute('aria-checked', String(strictMode));
+            const check = strictToggle.querySelector('.check-icon');
+            if (check) check.hidden = !strictMode;
+            announce('Strict mode ' + (strictMode ? 'on' : 'off') + '.');
+        }
+
+        // ============ SOUND / MISC CONTROLS ============
+        function toggleSound() {
+            if (!soundSupported) return;
+            isMuted = !isMuted;
+            iconSoundOn.classList.toggle('hidden', isMuted);
+            iconSoundOff.classList.toggle('hidden', !isMuted);
+            soundBtn.setAttribute('aria-pressed', String(!isMuted));
+            if (!isMuted) ensureAudio();
+            announce('Sound ' + (isMuted ? 'off' : 'on') + '.');
         }
 
         function clearDrawing() {
             userPath = [];
             collisionPoints = [];
             errorCount = 0;
-            errorDisplay.innerText = 0;
-            isGameActive = true;
-            document.getElementById('successModal').classList.remove('show');
-            render();
+            lastSample = null;
+            lastStored = null;
+            releaseCapture();
+            activePointerId = null;
+            updateErrorDisplay();
+            forceState(STATE.IDLE);
+            renderPending = true;
+            announce('Path cleared.');
+        }
+
+        // ============ MODAL ============
+        function showModal() {
+            lastFocused = document.activeElement;
+            modalOpen = true;
+            successModal.classList.add('show');
+            successModal.setAttribute('aria-hidden', 'false');
+            hideHover();
+            playAgainBtn.focus();
+        }
+
+        function hideModal() {
+            if (!modalOpen) return;
+            modalOpen = false;
+            successModal.classList.remove('show');
+            successModal.setAttribute('aria-hidden', 'true');
+            if (lastFocused && typeof lastFocused.focus === 'function') lastFocused.focus();
+        }
+
+        function onModalKeydown(e) {
+            if (!modalOpen) return;
+            if (e.key === 'Escape') {
+                e.preventDefault();
+                hideModal();
+                return;
+            }
+            if (e.key === 'Tab') {
+                const focusables = successModal.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+                if (focusables.length) {
+                    const first = focusables[0];
+                    const last = focusables[focusables.length - 1];
+                    if (e.shiftKey && document.activeElement === first) {
+                        e.preventDefault();
+                        last.focus();
+                    } else if (!e.shiftKey && document.activeElement === last) {
+                        e.preventDefault();
+                        first.focus();
+                    }
+                }
+            }
         }
 
         function closeModalAndReset() {
-            generateNewGame();
+            hideModal();
+            generateMaze();
         }
 
-        function toggleSound() {
-            isMuted = !isMuted;
-            document.getElementById('icon-sound-on').classList.toggle('hidden');
-            document.getElementById('icon-sound-off').classList.toggle('hidden');
+        // ============ DEBUG DIAGNOSTICS ============
+        function debugLog(entry) {
+            if (!DEBUG) return;
+            const hasCapture = (activePointerId !== null) && (typeof canvas.hasPointerCapture === 'function');
+            debugBuffer.push({
+                t: Math.round(performance.now()),
+                type: entry.type || entry.debugType || '',
+                pointerType: entry.pointerType != null ? entry.pointerType : null,
+                pointerId: entry.pointerId != null ? entry.pointerId : null,
+                isPrimary: entry.isPrimary != null ? entry.isPrimary : null,
+                button: entry.button != null ? entry.button : null,
+                buttons: entry.buttons != null ? entry.buttons : null,
+                pressure: typeof entry.pressure === 'number' ? Number(entry.pressure.toFixed(2)) : null,
+                x: entry.x != null ? Number(entry.x.toFixed(1)) : null,
+                y: entry.y != null ? Number(entry.y.toFixed(1)) : null,
+                capture: hasCapture,
+                state: currentState,
+                action: entry.action || entry.reason || entry.from || null
+            });
+            if (debugBuffer.length > CONFIG.DEBUG_BUFFER) debugBuffer.shift();
+            debugDirty = true;
         }
 
-        // Event Listeners
-        window.addEventListener('resize', () => {
-            setTimeout(generateMaze, 100);
-        });
+        function renderDebugPanel() {
+            const tail = debugBuffer.slice(-15);
+            const lines = [];
+            for (let i = 0; i < tail.length; i++) {
+                lines.push(JSON.stringify(tail[i]));
+            }
+            debugOutput.textContent = lines.join('\n');
+        }
 
-        // Mouse
-        canvas.addEventListener('mousedown', startDrawing);
-        canvas.addEventListener('mousemove', draw);
-        canvas.addEventListener('mouseup', stopDrawing);
-        canvas.addEventListener('mouseout', stopDrawing);
+        // ============ CONTROLS / LISTENERS ============
+        function bindControls() {
+            difficultyTrigger.addEventListener('click', toggleDropdown);
+            document.addEventListener('pointerdown', function (e) {
+                if (!difficultyMenu.classList.contains('show')) return;
+                if (!difficultyMenu.contains(e.target) && !difficultyTrigger.contains(e.target)) {
+                    closeDropdown();
+                }
+            });
+            document.addEventListener('keydown', function (e) {
+                if (e.key === 'Escape' && difficultyMenu.classList.contains('show')) {
+                    closeDropdown();
+                }
+            });
+            for (let i = 0; i < menuItems.length; i++) {
+                menuItems[i].addEventListener('click', function () {
+                    selectDifficulty(Number(this.dataset.difficulty));
+                });
+            }
+            strictToggle.addEventListener('click', toggleStrict);
+            soundBtn.addEventListener('click', toggleSound);
+            newMazeBtn.addEventListener('click', generateNewGame);
+            clearBtn.addEventListener('click', clearDrawing);
+            playAgainBtn.addEventListener('click', closeModalAndReset);
+            successModal.addEventListener('keydown', onModalKeydown);
 
-        // Touch
-        canvas.addEventListener('touchstart', startDrawing, { passive: false });
-        canvas.addEventListener('touchmove', draw, { passive: false });
-        canvas.addEventListener('touchend', stopDrawing);
+            if (DEBUG) {
+                debugPanel.hidden = false;
+                debugCopy.addEventListener('click', function () {
+                    const text = JSON.stringify(debugBuffer, null, 2);
+                    if (navigator.clipboard && navigator.clipboard.writeText) {
+                        navigator.clipboard.writeText(text).catch(function () {
+                            debugOutput.textContent = text;
+                        });
+                    } else {
+                        debugOutput.textContent = text;
+                    }
+                });
+                debugClear.addEventListener('click', function () {
+                    debugBuffer = [];
+                    debugOutput.textContent = '';
+                });
+            }
+        }
 
-        // Init
-        setTimeout(generateMaze, 100);
+        function bindResize() {
+            const schedule = function () {
+                clearTimeout(resizeTimer);
+                resizeTimer = setTimeout(onResizeDebounced, CONFIG.RESIZE_DEBOUNCE_MS);
+            };
+            if (typeof ResizeObserver === 'function') {
+                const observer = new ResizeObserver(schedule);
+                observer.observe(container);
+            }
+            window.addEventListener('resize', schedule);
+            window.addEventListener('beforeunload', function () { clearTimeout(resizeTimer); });
+        }
+
+        // ============ SELF TEST ============
+        function runSelfTests() {
+            const results = [];
+            const approx = function (a, b, eps) {
+                return Math.abs(a - b) <= (eps === undefined ? 1e-9 : eps);
+            };
+            const check = function (name, cond) {
+                results.push({ name: name, pass: !!cond });
+            };
+
+            // Coordinate conversion: offsets, non-uniform scale, zero, scaled canvas
+            let p = cssToLogical(10, 20, { left: 10, top: 20, width: 200, height: 100 }, 400, 200, 2);
+            check('cssToLogical zero coordinate maps to (0,0)', p.x === 0 && p.y === 0);
+            p = cssToLogical(110, 70, { left: 10, top: 20, width: 200, height: 100 }, 400, 200, 2);
+            check('cssToLogical offset + scale', approx(p.x, 100) && approx(p.y, 50));
+            p = cssToLogical(50, 50, { left: 0, top: 0, width: 100, height: 100 }, 300, 300, 3);
+            check('cssToLogical CSS-scaled canvas', approx(p.x, 50) && approx(p.y, 50));
+            p = cssToLogical(25, 25, { left: 0, top: 0, width: 50, height: 100 }, 300, 300, 3);
+            check('cssToLogical non-uniform scale', approx(p.x, 50) && approx(p.y, 25));
+
+            // Point-segment distance
+            check('distPointToSegment perpendicular', approx(distPointToSegment(0, 5, -10, 5, 10, 5), 0));
+            check('distPointToSegment beyond endpoint', approx(distPointToSegment(20, 0, 0, 0, 10, 0), 10));
+            check('distPointToSegment corner', approx(distPointToSegment(0, 0, 10, 10, 20, 10), Math.sqrt(200)));
+
+            // Swept collision
+            const horiz = { x: 0, y: 10, w: 100, h: 8 };
+            check('collision crossing horizontal wall', segmentIntersectsExpandedRect({ x: 5, y: 0 }, { x: 5, y: 30 }, horiz, 4));
+            check('collision tangent to wall edge', segmentIntersectsExpandedRect({ x: 5, y: 0 }, { x: 5, y: 6 }, horiz, 4));
+            check('collision clear of wall', !segmentIntersectsExpandedRect({ x: 5, y: 0 }, { x: 5, y: 4 }, horiz, 0.5));
+            const vert = { x: 10, y: 0, w: 8, h: 100 };
+            check('collision crossing vertical wall', segmentIntersectsExpandedRect({ x: 0, y: 50 }, { x: 50, y: 50 }, vert, 4));
+            const corner = { x: 10, y: 10, w: 20, h: 20 };
+            check('collision near corner within radius', segmentIntersectsExpandedRect({ x: 0, y: 0 }, { x: 9, y: 9 }, corner, 4));
+            check('collision far from corner', !segmentIntersectsExpandedRect({ x: 0, y: 0 }, { x: 5, y: 5 }, corner, 4));
+            check('collision parallel to wall', !segmentIntersectsExpandedRect({ x: 5, y: 0 }, { x: 95, y: 0 }, horiz, 4));
+
+            // Target intersection incl. sparse jump
+            const target = { x: 50, y: 50 };
+            check('target crossed by segment', segmentHitsCircle({ x: 0, y: 50 }, { x: 100, y: 50 }, target, 10));
+            check('target jump over goal', segmentHitsCircle({ x: 0, y: 50 }, { x: 60, y: 50 }, target, 10));
+            check('target missed', !segmentHitsCircle({ x: 0, y: 0 }, { x: 45, y: 0 }, target, 10));
+            check('target tangent', segmentHitsCircle({ x: 40, y: 40 }, { x: 60, y: 40 }, target, 10));
+            check('target just outside', !segmentHitsCircle({ x: 40, y: 39.4 }, { x: 60, y: 39.4 }, target, 10));
+
+            // State machine transitions
+            check('transition idle->drawing', canTransition(STATE.IDLE, STATE.DRAWING));
+            check('transition drawing->paused', canTransition(STATE.DRAWING, STATE.PAUSED));
+            check('transition drawing->collided', canTransition(STATE.DRAWING, STATE.COLLIDED));
+            check('transition drawing->won', canTransition(STATE.DRAWING, STATE.WON));
+            check('transition idle->won illegal', !canTransition(STATE.IDLE, STATE.WON));
+            check('transition won->drawing illegal', !canTransition(STATE.WON, STATE.DRAWING));
+            check('transition unknown illegal', !canTransition(undefined, STATE.DRAWING));
+
+            // Start action semantics
+            check('first start at start zone', evaluateStartAction({ hasPath: false, isAtStart: true, isNearResume: false, resumeSegmentSafe: false, strictMode: false }) === 'start');
+            check('first start not at start zone', evaluateStartAction({ hasPath: false, isAtStart: false, isNearResume: false, resumeSegmentSafe: false, strictMode: false }) === 'reject');
+            check('strict restart at start', evaluateStartAction({ hasPath: true, isAtStart: true, isNearResume: false, resumeSegmentSafe: false, strictMode: true }) === 'restart');
+            check('strict no resume', evaluateStartAction({ hasPath: true, isAtStart: false, isNearResume: true, resumeSegmentSafe: true, strictMode: true }) === 'reject');
+            check('normal restart at start', evaluateStartAction({ hasPath: true, isAtStart: true, isNearResume: false, resumeSegmentSafe: false, strictMode: false }) === 'restart');
+            check('normal resume near last point', evaluateStartAction({ hasPath: true, isAtStart: false, isNearResume: true, resumeSegmentSafe: true, strictMode: false }) === 'resume');
+            check('normal resume unsafe segment rejected', evaluateStartAction({ hasPath: true, isAtStart: false, isNearResume: true, resumeSegmentSafe: false, strictMode: false }) === 'reject');
+            check('normal arbitrary start rejected', evaluateStartAction({ hasPath: true, isAtStart: false, isNearResume: false, resumeSegmentSafe: false, strictMode: false }) === 'reject');
+
+            // Primary pointer / button filtering
+            check('mouse left button allowed', isPrimaryPointerAllowed('mouse', true, 0));
+            check('mouse right button rejected', !isPrimaryPointerAllowed('mouse', true, 2));
+            check('pen tip allowed', isPrimaryPointerAllowed('pen', true, 0));
+            check('pen barrel button rejected', !isPrimaryPointerAllowed('pen', true, 5));
+            check('secondary touch rejected', !isPrimaryPointerAllowed('touch', false, 0));
+            check('primary touch allowed', isPrimaryPointerAllowed('touch', true, 0));
+
+            // Layout clamping
+            const small = computeLayout(200, 200, 20, CONFIG);
+            check('tiny viewport min cell size', small.cellSize >= CONFIG.MIN_CELL && small.cols >= 3 && small.rows >= 3);
+            const ultrawide = computeLayout(3000, 300, 20, CONFIG);
+            check('ultrawide cols capped', ultrawide.cols === CONFIG.MAX_COLS);
+            const tiny = computeLayout(50, 50, 30, CONFIG);
+            check('tiny viewport guarded', tiny.cellSize > 0 && tiny.cols >= 3 && tiny.rows >= 3);
+
+            // Deterministic maze validity
+            const mazeA = generateCells(10, 10, makeRng(42));
+            const mazeB = generateCells(10, 10, makeRng(42));
+            const allVisited = mazeA.every(function (cell) { return cell.visited; });
+            check('maze all cells reachable', allVisited);
+            let symmetric = true;
+            for (let r = 0; r < 10; r++) {
+                for (let c = 0; c < 10; c++) {
+                    const cell = mazeA[c + r * 10];
+                    if (c + 1 < 10) {
+                        const right = mazeA[(c + 1) + r * 10];
+                        if (cell.walls[1] !== right.walls[3]) symmetric = false;
+                    }
+                    if (r + 1 < 10) {
+                        const bottom = mazeA[c + (r + 1) * 10];
+                        if (cell.walls[2] !== bottom.walls[0]) symmetric = false;
+                    }
+                }
+            }
+            check('maze wall symmetry intact', symmetric);
+            const deterministic = mazeA.every(function (cell, i) {
+                return JSON.stringify(cell.walls) === JSON.stringify(mazeB[i].walls);
+            });
+            check('maze generation deterministic per seed', deterministic);
+            check('maze start cell defined', mazeA[0].c === 0 && mazeA[0].r === 0);
+
+            // Wall geometry shares rects correctly
+            const wallData = buildWallData(10, 10, 20, mazeA, 8);
+            check('wall data built', wallData.walls.length > 0 && wallData.refs.length === 10 && wallData.refs[0].length === 10);
+            check('border top shared across first row', wallData.refs[0][0].top === wallData.refs[0][5].top);
+
+            const passed = results.filter(function (r) { return r.pass; }).length;
+            const failed = results.length - passed;
+
+            const out = document.createElement('div');
+            out.style.cssText = 'position:fixed;top:8px;right:8px;z-index:200;max-width:420px;max-height:50vh;overflow:auto;' +
+                'background:#fff;border:1px solid #ccc;border-radius:8px;padding:10px;font:12px/1.4 monospace;';
+            let html = '<strong>' + passed + ' passed, ' + failed + ' failed</strong><br>';
+            for (let i = 0; i < results.length; i++) {
+                html += (results[i].pass ? 'PASS ' : 'FAIL ') + results[i].name + '<br>';
+            }
+            out.innerHTML = html;
+            document.body.appendChild(out);
+            console.info('[selftest] ' + passed + ' passed, ' + failed + ' failed');
+            window.__SELFTEST_RESULT = { passed: passed, failed: failed };
+            return { passed: passed, failed: failed };
+        }
+
+        // ============ INIT ============
+        function init() {
+            if (!ctx || !bgCtx || !dynCtx) {
+                container.innerHTML = '<p role="alert">Your browser does not support 2D canvas drawing. ' +
+                    'Please update your browser to play Maze Flow.</p>';
+                return;
+            }
+            bindInput();
+            bindControls();
+            bindResize();
+            generateMaze();
+            requestAnimationFrame(frame);
+            if (SELFTEST) {
+                setTimeout(function () {
+                    try { runSelfTests(); } catch (err) {
+                        console.error('[selftest] crashed', err);
+                        window.__SELFTEST_RESULT = { passed: 0, failed: -1 };
+                    }
+                }, 0);
+            }
+        }
+
+        init();
+
+        // ============ EXPOSED API (for tests / tooling) ============
+        window.MazeFlow = {
+            CONFIG: CONFIG,
+            STATE: STATE,
+            state: {
+                get current() { return currentState; },
+                get activePointerId() { return activePointerId; },
+                get errorCount() { return errorCount; },
+                get strictMode() { return strictMode; },
+                get muted() { return isMuted; },
+                get modalOpen() { return modalOpen; },
+                get cellSize() { return cellSize; },
+                get cols() { return cols; },
+                get rows() { return rows; },
+                get logicalW() { return logicalW; },
+                get logicalH() { return logicalH; },
+                get startCell() { return startCell; },
+                get endCell() { return endCell; },
+                get grid() { return grid; },
+                get pathLength() { return userPath.length; }
+            },
+            actions: {
+                generateMaze: generateMaze,
+                generateNewGame: generateNewGame,
+                clearDrawing: clearDrawing,
+                reset: resetRun,
+                setStrict: function (value) {
+                    if (value !== undefined) strictMode = !!value;
+                    else strictMode = !strictMode;
+                    strictToggle.classList.toggle('active', strictMode);
+                    strictToggle.setAttribute('aria-checked', String(strictMode));
+                    const check = strictToggle.querySelector('.check-icon');
+                    if (check) check.hidden = !strictMode;
+                }
+            },
+            pure: {
+                clamp: clamp,
+                clampPoint: clampPoint,
+                dist: dist,
+                pointInRect: pointInRect,
+                distPointToSegment: distPointToSegment,
+                segSegDistance: segSegDistance,
+                segmentHitsCircle: segmentHitsCircle,
+                segmentIntersectsExpandedRect: segmentIntersectsExpandedRect,
+                cssToLogical: cssToLogical,
+                makeRng: makeRng,
+                generateCells: generateCells,
+                buildWallData: buildWallData,
+                canTransition: canTransition,
+                evaluateStartAction: evaluateStartAction,
+                isPrimaryPointerAllowed: isPrimaryPointerAllowed,
+                computeLayout: computeLayout
+            },
+            runSelfTests: runSelfTests
+        };
     </script>
 </body>
 
