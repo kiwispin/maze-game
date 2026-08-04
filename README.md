@@ -48,10 +48,6 @@ used only when Pointer Events are unavailable; the two paths are never active to
   tablets work through the unified Pointer Events stream.
 - Single-touch (the primary touch only; extra fingers are ignored during a gesture).
 
-A DOM hover indicator (`pointer-events: none`) shows pen/mouse position while the pen
-is in range, independent of the operating-system cursor. It is hidden for touch and on
-cancel, modal display, and loss of focus.
-
 No driver or Windows Ink configuration is required as a workaround. Windows Ink should
 still be tested both on and off as part of the manual matrix below.
 

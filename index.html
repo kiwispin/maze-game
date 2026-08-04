@@ -208,7 +208,6 @@
             background: white;
             max-width: 100%;
             max-height: 100%;
-            cursor: crosshair;
             touch-action: none;
             -webkit-tap-highlight-color: transparent;
         }
@@ -289,55 +288,6 @@
             width: 100%;
             padding-top: 12px;
             padding-bottom: 12px;
-        }
-
-        /* --- Hover indicator --- */
-        .hover-ind {
-            position: fixed;
-            left: 0;
-            top: 0;
-            width: 22px;
-            height: 22px;
-            border-radius: 50%;
-            border: 2px solid var(--text);
-            color: var(--text);
-            opacity: 0;
-            pointer-events: none;
-            z-index: 40;
-            transition: opacity 0.08s ease;
-            will-change: transform;
-        }
-
-        .hover-ind::after {
-            content: "";
-            position: absolute;
-            left: 50%;
-            top: 50%;
-            width: 6px;
-            height: 6px;
-            margin: -3px 0 0 -3px;
-            border-radius: 50%;
-            background: currentColor;
-        }
-
-        .hover-ind[data-state="start"] {
-            border-color: var(--success);
-            color: var(--success);
-        }
-
-        .hover-ind[data-state="drawing"] {
-            border-color: var(--accent);
-            color: var(--accent);
-        }
-
-        .hover-ind[data-state="collided"] {
-            border-color: var(--danger);
-            color: var(--danger);
-        }
-
-        .hover-ind[data-state="paused"] {
-            border-color: var(--text-muted);
-            color: var(--text-muted);
         }
 
         /* --- Modal --- */
@@ -504,7 +454,6 @@
 
 <body>
     <div id="flash"></div>
-    <div id="hoverInd" class="hover-ind" data-state="idle" aria-hidden="true"></div>
 
     <header class="top-bar glass-panel">
         <div class="top-pill">
@@ -951,7 +900,6 @@
         const finalTime = document.getElementById('final-time');
         const finalErrors = document.getElementById('final-errors');
         const flashOverlay = document.getElementById('flash');
-        const hoverInd = document.getElementById('hoverInd');
         const difficultyTrigger = document.getElementById('difficultyTrigger');
         const difficultyMenu = document.getElementById('difficultyMenu');
         const difficultyLabel = document.getElementById('difficultyLabel');
@@ -1170,7 +1118,6 @@
             updateErrorDisplay();
             resetTimer();
             hideModal();
-            hideHover();
             forceState(STATE.IDLE);
             renderPending = true;
         }
@@ -1440,7 +1387,6 @@
             trimPath();
 
             setState(STATE.DRAWING);
-            updateHover(e);
             renderPending = true;
             debugLog({
                 type: e.type, pointerType: e.pointerType, pointerId: e.pointerId,
@@ -1450,7 +1396,6 @@
         }
 
         function onPointerMove(e) {
-            updateHover(e);
             if (e.pointerId !== activePointerId) return;
             if (currentState !== STATE.DRAWING) return;
 
@@ -1619,9 +1564,6 @@
             canvas.addEventListener('pointerup', onPointerUp);
             canvas.addEventListener('pointercancel', onPointerCancel);
             canvas.addEventListener('lostpointercapture', onLostPointerCapture);
-            canvas.addEventListener('pointerleave', function () {
-                if (currentState !== STATE.DRAWING) hideHover();
-            });
             window.addEventListener('blur', function () { endActivePointer('blur'); });
             document.addEventListener('visibilitychange', function () {
                 if (document.hidden) endActivePointer('hide');
@@ -1635,25 +1577,6 @@
             } else {
                 bindLegacyInput();
             }
-        }
-
-        // ============ HOVER INDICATOR ============
-        function updateHover(e) {
-            if (e.pointerType === 'touch') { hideHover(); return; }
-            if (currentState === STATE.WON || modalOpen) { hideHover(); return; }
-            const pos = clampSample(toLogical(e.clientX, e.clientY));
-            hoverInd.style.opacity = '1';
-            hoverInd.style.transform = 'translate(' + e.clientX + 'px, ' + e.clientY + 'px) translate(-50%, -50%)';
-            let stateClass = 'idle';
-            if (currentState === STATE.DRAWING) stateClass = 'drawing';
-            else if (currentState === STATE.COLLIDED) stateClass = 'collided';
-            else if (currentState === STATE.PAUSED) stateClass = 'paused';
-            else if (isInStartZone(pos)) stateClass = 'start';
-            hoverInd.dataset.state = stateClass;
-        }
-
-        function hideHover() {
-            hoverInd.style.opacity = '0';
         }
 
         // ============ AUDIO (lazy) ============
@@ -1806,7 +1729,6 @@
             modalOpen = true;
             successModal.classList.add('show');
             successModal.setAttribute('aria-hidden', 'false');
-            hideHover();
             playAgainBtn.focus();
         }
 
