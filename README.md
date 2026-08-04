@@ -29,6 +29,10 @@ stack, and it works offline. Opening the file via `file://` is supported.
   from the green cell. The error count is only reset by an explicit restart or a new maze.
 - **Win:** reach the red target circle. The win region matches the visible circle and
   uses segment-to-circle intersection, so a fast stroke cannot skip over the goal.
+- **Timer:** starts when you begin a route and ticks in the top bar. It keeps running
+  across lifts/resumes in Normal mode, and resets on any restart from the green cell,
+  on Clear Path, and on New Maze. It stops when you reach the target, and the final
+  time is shown in the win dialog.
 - **New Maze / Clear Path / Sound:** bottom controls; the top menu sets difficulty and
   Strict mode.
 

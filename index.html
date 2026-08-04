@@ -110,6 +110,10 @@
             font-variant-numeric: tabular-nums;
         }
 
+        .top-pill .time-value {
+            font-variant-numeric: tabular-nums;
+        }
+
         .dropdown {
             position: relative;
         }
@@ -508,6 +512,11 @@
             <span id="error-count" class="error-value">0</span>
         </div>
 
+        <div class="top-pill" role="timer" aria-label="Elapsed time">
+            <span class="muted">Time</span>
+            <span id="run-time" class="time-value">0:00.0</span>
+        </div>
+
         <div class="dropdown">
             <button id="difficultyTrigger" type="button"
                 class="glass-panel top-pill dropdown-trigger" aria-haspopup="menu"
@@ -619,7 +628,8 @@
                 </svg>
             </div>
             <h2 id="successTitle" class="modal-title">Maze Clear!</h2>
-            <p class="modal-sub">You navigated the maze with <strong id="final-errors">0</strong> error(s).</p>
+            <p class="modal-sub">You navigated the maze with <strong id="final-errors">0</strong> error(s)
+                in <strong id="final-time">0:00.0</strong>.</p>
             <button id="playAgainBtn" class="btn-primary block" type="button">Play Again</button>
         </div>
     </div>
@@ -771,6 +781,14 @@
                 x: (clientX - rect.left) * scaleX / renderScale,
                 y: (clientY - rect.top) * scaleY / renderScale
             };
+        }
+
+        function formatTime(ms) {
+            const total = Math.max(0, ms);
+            const m = Math.floor(total / 60000);
+            const s = Math.floor((total % 60000) / 1000);
+            const t = Math.floor((total % 1000) / 100);
+            return m + ':' + String(s).padStart(2, '0') + '.' + t;
         }
 
         // ============ PURE MAZE GENERATION ============
@@ -929,6 +947,8 @@
         const dynCtx = dynCanvas.getContext('2d');
 
         const errorDisplay = document.getElementById('error-count');
+        const runTimeDisplay = document.getElementById('run-time');
+        const finalTime = document.getElementById('final-time');
         const finalErrors = document.getElementById('final-errors');
         const flashOverlay = document.getElementById('flash');
         const hoverInd = document.getElementById('hoverInd');
@@ -974,6 +994,8 @@
         let shakeTimer = null;
         let resizeTimer = null;
         let rejectFlashUntilT = 0;
+        let runStartT = null;
+        let finalElapsed = 0;
         let reducedMotion = false;
         let debugBuffer = [];
         let debugDirty = false;
@@ -1010,6 +1032,17 @@
 
         function updateErrorDisplay() {
             errorDisplay.textContent = String(errorCount);
+        }
+
+        function resetTimer() {
+            runStartT = null;
+            finalElapsed = 0;
+            updateTimerDisplay(performance.now());
+        }
+
+        function updateTimerDisplay(now) {
+            const elapsed = (runStartT !== null) ? (now - runStartT) : finalElapsed;
+            runTimeDisplay.textContent = formatTime(elapsed);
         }
 
         function announce(message) {
@@ -1135,6 +1168,7 @@
             releaseCapture();
             activePointerId = null;
             updateErrorDisplay();
+            resetTimer();
             hideModal();
             hideHover();
             forceState(STATE.IDLE);
@@ -1330,6 +1364,8 @@
             if (!reducedMotion) drawPulse(now / 1000);
             ctx.drawImage(dynCanvas, 0, 0, logicalW, logicalH);
 
+            if (runStartT !== null) updateTimerDisplay(now);
+
             if (DEBUG && debugDirty) {
                 renderDebugPanel();
                 debugDirty = false;
@@ -1390,8 +1426,11 @@
                 collisionPoints = [];
                 errorCount = 0;
                 updateErrorDisplay();
+                resetTimer();
                 announce('Restarting from the start.');
             }
+
+            if (runStartT === null) runStartT = performance.now();
 
             activePointerId = e.pointerId;
             capturePointer(e);
@@ -1494,7 +1533,14 @@
             playWinSound();
             updateErrorDisplay();
             finalErrors.textContent = String(errorCount);
-            announce('Maze clear! ' + errorCount + ' error' + (errorCount === 1 ? '' : 's') + '.');
+            if (runStartT !== null) {
+                finalElapsed = performance.now() - runStartT;
+                runStartT = null;
+            }
+            updateTimerDisplay(performance.now());
+            finalTime.textContent = formatTime(finalElapsed);
+            announce('Maze clear! ' + errorCount + ' error' + (errorCount === 1 ? '' : 's') +
+                ' in ' + formatTime(finalElapsed) + '.');
             showModal();
             renderPending = true;
         }
@@ -1748,6 +1794,7 @@
             releaseCapture();
             activePointerId = null;
             updateErrorDisplay();
+            resetTimer();
             forceState(STATE.IDLE);
             renderPending = true;
             announce('Path cleared.');
@@ -1909,6 +1956,12 @@
             p = cssToLogical(25, 25, { left: 0, top: 0, width: 50, height: 100 }, 300, 300, 3);
             check('cssToLogical non-uniform scale', approx(p.x, 50) && approx(p.y, 25));
 
+            // Time formatting
+            check('formatTime zero', formatTime(0) === '0:00.0');
+            check('formatTime seconds', formatTime(12300) === '0:12.3');
+            check('formatTime minutes', formatTime(75400) === '1:15.4');
+            check('formatTime ignores negatives', formatTime(-5) === '0:00.0');
+
             // Point-segment distance
             check('distPointToSegment perpendicular', approx(distPointToSegment(0, 5, -10, 5, 10, 5), 0));
             check('distPointToSegment beyond endpoint', approx(distPointToSegment(20, 0, 0, 0, 10, 0), 10));
@@ -2060,7 +2113,8 @@
                 get startCell() { return startCell; },
                 get endCell() { return endCell; },
                 get grid() { return grid; },
-                get pathLength() { return userPath.length; }
+                get pathLength() { return userPath.length; },
+                get timerRunning() { return runStartT !== null; }
             },
             actions: {
                 generateMaze: generateMaze,
@@ -2086,6 +2140,7 @@
                 segmentHitsCircle: segmentHitsCircle,
                 segmentIntersectsExpandedRect: segmentIntersectsExpandedRect,
                 cssToLogical: cssToLogical,
+                formatTime: formatTime,
                 makeRng: makeRng,
                 generateCells: generateCells,
                 buildWallData: buildWallData,
