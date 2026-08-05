@@ -455,6 +455,25 @@
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
         }
 
+        /* --- Coaching hint --- */
+        .coach-toast {
+            position: fixed;
+            left: 0;
+            top: 0;
+            max-width: 280px;
+            background: rgba(29, 29, 31, 0.92);
+            color: #fff;
+            border-radius: 10px;
+            padding: 8px 12px;
+            font-size: 13px;
+            line-height: 1.35;
+            z-index: 150;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.15s ease;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+        }
+
         @media (prefers-reduced-motion: reduce) {
             .btn-icon,
             .btn-primary,
@@ -604,6 +623,7 @@
     <div id="statusRegion" class="visually-hidden" aria-live="polite"></div>
 
     <div id="errorBanner" class="error-banner" hidden role="alert"></div>
+    <div id="coachToast" class="coach-toast" role="status"></div>
 
     <section id="debugPanel" class="debug-panel" hidden>
         <h2>Input diagnostics</h2>
@@ -934,6 +954,7 @@
         const playAgainBtn = document.getElementById('playAgainBtn');
         const statusRegion = document.getElementById('statusRegion');
         const errorBanner = document.getElementById('errorBanner');
+        const coachToast = document.getElementById('coachToast');
         const debugPanel = document.getElementById('debugPanel');
         const debugOutput = document.getElementById('debugOutput');
         const debugCopy = document.getElementById('debugCopy');
@@ -1023,6 +1044,21 @@
             if (!errorBanner || !errorBanner.hidden) return;
             errorBanner.textContent = 'Maze Flow hit a problem: ' + message;
             errorBanner.hidden = false;
+        }
+
+        let coachTimer = null;
+
+        function showCoachToast(message, clientX, clientY) {
+            if (!coachToast || !message) return;
+            coachToast.textContent = message;
+            coachToast.style.left = '0px';
+            coachToast.style.top = '0px';
+            const x = Math.max(12, Math.min(clientX + 18, window.innerWidth - 300));
+            const y = Math.max(12, clientY - 56);
+            coachToast.style.transform = 'translate(' + x + 'px, ' + y + 'px)';
+            coachToast.style.opacity = '1';
+            clearTimeout(coachTimer);
+            coachTimer = setTimeout(function () { coachToast.style.opacity = '0'; }, 1800);
         }
 
         // ============ GEOMETRY HELPERS (stateful) ============
@@ -1398,6 +1434,7 @@
                 const msg = getStartRejectMessage(hasPath, strictMode, isAtStart);
                 if (msg) announce(msg);
                 rejectFlashUntilT = performance.now() / 1000 + 0.5;
+                showCoachToast(msg, e.clientX, e.clientY);
                 return;
             }
 

@@ -55,7 +55,9 @@ No driver or Windows Ink configuration is required as a workaround. Windows Ink 
 still be tested both on and off as part of the manual matrix below.
 
 If the page ever fails to start, an on-screen banner shows the underlying error (useful
-on managed machines where DevTools are not available to students).
+on managed machines where DevTools are not available to students). When a press is
+rejected because it is not on the green circle, a short coaching hint explains how to
+start, so a "can't draw" situation is self-explanatory.
 
 ## Testing
 
