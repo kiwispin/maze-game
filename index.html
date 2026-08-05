@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 
 <head>
@@ -178,6 +178,14 @@
         .dropdown-item.active {
             color: var(--accent);
             background: rgba(0, 122, 255, 0.1);
+        }
+
+        .dropdown-item .check-icon {
+            display: none;
+        }
+
+        .dropdown-item.active .check-icon {
+            display: inline-flex;
         }
 
         .dropdown-sep {
@@ -528,7 +536,7 @@
                     <span>Easy</span>
                     <svg class="check-icon" width="16" height="16" viewBox="0 0 24 24" fill="none"
                         stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"
-                        aria-hidden="true" hidden>
+                        aria-hidden="true">
                         <polyline points="20 6 9 17 4 12"></polyline>
                     </svg>
                 </button>
@@ -546,7 +554,7 @@
                     <span>Hard</span>
                     <svg class="check-icon" width="16" height="16" viewBox="0 0 24 24" fill="none"
                         stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"
-                        aria-hidden="true" hidden>
+                        aria-hidden="true">
                         <polyline points="20 6 9 17 4 12"></polyline>
                     </svg>
                 </button>
@@ -556,7 +564,7 @@
                     <span>Strict Mode</span>
                     <svg class="check-icon" width="16" height="16" viewBox="0 0 24 24" fill="none"
                         stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"
-                        aria-hidden="true" hidden>
+                        aria-hidden="true">
                         <polyline points="20 6 9 17 4 12"></polyline>
                     </svg>
                 </button>
@@ -1805,8 +1813,6 @@
                 const active = Number(item.dataset.difficulty) === value;
                 item.classList.toggle('active', active);
                 item.setAttribute('aria-checked', String(active));
-                const check = item.querySelector('.check-icon');
-                if (check) check.hidden = !active;
             }
             closeDropdown();
             generateMaze();
@@ -1817,8 +1823,6 @@
             strictMode = !strictMode;
             strictToggle.classList.toggle('active', strictMode);
             strictToggle.setAttribute('aria-checked', String(strictMode));
-            const check = strictToggle.querySelector('.check-icon');
-            if (check) check.hidden = !strictMode;
             announce('Strict mode ' + (strictMode ? 'on' : 'off') + '.');
         }
 
@@ -2185,8 +2189,6 @@
                     else strictMode = !strictMode;
                     strictToggle.classList.toggle('active', strictMode);
                     strictToggle.setAttribute('aria-checked', String(strictMode));
-                    const check = strictToggle.querySelector('.check-icon');
-                    if (check) check.hidden = !strictMode;
                 }
             },
             pure: {
@@ -2214,3 +2216,4 @@
 </body>
 
 </html>
+
