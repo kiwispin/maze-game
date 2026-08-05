@@ -951,6 +951,7 @@
         let errorCount = 0;
         let currentState = STATE.IDLE;
         let activePointerId = null;
+        let pointerEventsObserved = false;
         let currentDifficulty = 20;
         let strictMode = false;
         let isMuted = false;
@@ -1375,6 +1376,7 @@
         }
 
         function onPointerDown(e) {
+            pointerEventsObserved = true;
             beginGesture(e);
         }
 
@@ -1427,6 +1429,7 @@
         }
 
         function onPointerMove(e) {
+            pointerEventsObserved = true;
             if (e.pointerId !== activePointerId) {
                 // Some pen drivers/browsers deliver contact as pointermove with buttons held
                 // and no pointerdown. Start the route from the first such move instead.
@@ -1436,6 +1439,10 @@
                 }
                 return;
             }
+            processDrawingMove(e);
+        }
+
+        function processDrawingMove(e) {
             if (currentState !== STATE.DRAWING) return;
 
             const samples = coalescedSamples(e);
@@ -1468,16 +1475,19 @@
         }
 
         function onPointerUp(e) {
+            pointerEventsObserved = true;
             if (e.pointerId !== activePointerId) return;
             endActivePointer('up');
         }
 
         function onPointerCancel(e) {
+            pointerEventsObserved = true;
             if (e.pointerId !== activePointerId) return;
             endActivePointer('cancel');
         }
 
         function onLostPointerCapture(e) {
+            pointerEventsObserved = true;
             if (e.pointerId !== activePointerId) return;
             endActivePointer('lost');
         }
@@ -1608,6 +1618,46 @@
                 if (document.hidden) endActivePointer('hide');
             });
             canvas.addEventListener('contextmenu', function (e) { e.preventDefault(); });
+
+            // Gated mouse fallback: only used when the browser never emits a single
+            // Pointer Event in this session (some drivers present the pen only as
+            // compatibility mouse events). Never active alongside Pointer Events.
+            canvas.addEventListener('mousedown', function (e) {
+                if (pointerEventsObserved) return;
+                if (e.button !== 0) return;
+                beginGesture(mouseCompatEvent('mousedown', e, 1, e.button));
+            });
+            canvas.addEventListener('mousemove', function (e) {
+                if (pointerEventsObserved) return;
+                const ev = mouseCompatEvent('mousemove', e, e.buttons, e.button);
+                if (activePointerId === null) {
+                    if (e.buttons !== 0 && isPrimaryPointerAllowed('mouse', true, e.button)) beginGesture(ev);
+                    return;
+                }
+                processDrawingMove(ev);
+            });
+            canvas.addEventListener('mouseup', function () {
+                if (pointerEventsObserved) return;
+                endActivePointer('up');
+            });
+            canvas.addEventListener('mouseout', function () {
+                if (pointerEventsObserved) return;
+                if (currentState === STATE.DRAWING) endActivePointer('mouseout');
+            });
+        }
+
+        function mouseCompatEvent(type, e, buttons, button) {
+            return {
+                type: type,
+                pointerType: 'mouse',
+                pointerId: 1,
+                isPrimary: true,
+                button: button,
+                buttons: buttons,
+                clientX: e.clientX,
+                clientY: e.clientY,
+                pressure: 0.5
+            };
         }
 
         function bindInput() {
