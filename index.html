@@ -972,7 +972,7 @@
         let errorCount = 0;
         let currentState = STATE.IDLE;
         let activePointerId = null;
-        let pointerEventsObserved = false;
+        let activePointerSource = null;
         let currentDifficulty = 20;
         let strictMode = false;
         let isMuted = false;
@@ -1179,6 +1179,7 @@
             lastStored = null;
             releaseCapture();
             activePointerId = null;
+            activePointerSource = null;
             updateErrorDisplay();
             resetTimer();
             hideModal();
@@ -1412,11 +1413,10 @@
         }
 
         function onPointerDown(e) {
-            pointerEventsObserved = true;
-            beginGesture(e);
+            beginGesture(e, 'pointer');
         }
 
-        function beginGesture(e) {
+        function beginGesture(e, source) {
             ensureAudio();
             if (currentState === STATE.WON || modalOpen) return;
             if (activePointerId !== null) return;
@@ -1450,6 +1450,7 @@
             if (runStartT === null) runStartT = performance.now();
 
             activePointerId = e.pointerId;
+            activePointerSource = source || 'pointer';
             capturePointer(e);
             lastSample = pos;
             lastStored = pos;
@@ -1466,13 +1467,12 @@
         }
 
         function onPointerMove(e) {
-            pointerEventsObserved = true;
             if (e.pointerId !== activePointerId) {
                 // Some pen drivers/browsers deliver contact as pointermove with buttons held
                 // and no pointerdown. Start the route from the first such move instead.
                 if (activePointerId === null && currentState !== STATE.WON && !modalOpen &&
                     e.buttons !== 0 && isPrimaryPointerAllowed(e.pointerType, e.isPrimary, e.button)) {
-                    beginGesture(e);
+                    beginGesture(e, 'pointer');
                 }
                 return;
             }
@@ -1512,19 +1512,16 @@
         }
 
         function onPointerUp(e) {
-            pointerEventsObserved = true;
             if (e.pointerId !== activePointerId) return;
             endActivePointer('up');
         }
 
         function onPointerCancel(e) {
-            pointerEventsObserved = true;
             if (e.pointerId !== activePointerId) return;
             endActivePointer('cancel');
         }
 
         function onLostPointerCapture(e) {
-            pointerEventsObserved = true;
             if (e.pointerId !== activePointerId) return;
             endActivePointer('lost');
         }
@@ -1534,6 +1531,7 @@
             if (currentState === STATE.DRAWING) setState(STATE.PAUSED);
             releaseCapture();
             activePointerId = null;
+            activePointerSource = null;
             renderPending = true;
             debugLog({ type: 'end', reason: reason, state: currentState });
             if (strictMode && (currentState === STATE.PAUSED || currentState === STATE.COLLIDED)) {
@@ -1561,6 +1559,7 @@
             setState(STATE.WON);
             releaseCapture();
             activePointerId = null;
+            activePointerSource = null;
             playWinSound();
             updateErrorDisplay();
             finalErrors.textContent = String(errorCount);
@@ -1656,29 +1655,29 @@
             });
             canvas.addEventListener('contextmenu', function (e) { e.preventDefault(); });
 
-            // Gated mouse fallback: only used when the browser never emits a single
-            // Pointer Event in this session (some drivers present the pen only as
-            // compatibility mouse events). Never active alongside Pointer Events.
+            // Mouse fallback: takes over whenever no gesture is already owned by a
+            // Pointer Event. This covers drivers/sessions where pointer events fire on
+            // hover but contact (button-held) events are never delivered. Because a
+            // gesture can be owned by exactly one source at a time, the two paths never
+            // double-draw.
             canvas.addEventListener('mousedown', function (e) {
-                if (pointerEventsObserved) return;
                 if (e.button !== 0) return;
-                beginGesture(mouseCompatEvent('mousedown', e, 1, e.button));
+                beginGesture(mouseCompatEvent('mousedown', e, 1, e.button), 'mouse');
             });
             canvas.addEventListener('mousemove', function (e) {
-                if (pointerEventsObserved) return;
                 const ev = mouseCompatEvent('mousemove', e, e.buttons, e.button);
                 if (activePointerId === null) {
-                    if (e.buttons !== 0 && isPrimaryPointerAllowed('mouse', true, e.button)) beginGesture(ev);
+                    if (e.buttons !== 0 && isPrimaryPointerAllowed('mouse', true, e.button)) beginGesture(ev, 'mouse');
                     return;
                 }
-                processDrawingMove(ev);
+                if (activePointerSource === 'mouse') processDrawingMove(ev);
             });
             canvas.addEventListener('mouseup', function () {
-                if (pointerEventsObserved) return;
+                if (activePointerSource !== 'mouse') return;
                 endActivePointer('up');
             });
             canvas.addEventListener('mouseout', function () {
-                if (pointerEventsObserved) return;
+                if (activePointerSource !== 'mouse') return;
                 if (currentState === STATE.DRAWING) endActivePointer('mouseout');
             });
         }
@@ -1842,6 +1841,7 @@
             lastStored = null;
             releaseCapture();
             activePointerId = null;
+            activePointerSource = null;
             updateErrorDisplay();
             resetTimer();
             forceState(STATE.IDLE);
