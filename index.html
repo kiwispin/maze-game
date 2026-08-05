@@ -437,6 +437,24 @@
             cursor: pointer;
         }
 
+        /* --- On-screen error banner --- */
+        .error-banner {
+            position: fixed;
+            bottom: 12px;
+            right: 12px;
+            max-width: 440px;
+            background: #fff;
+            border: 1px solid var(--danger);
+            border-left: 4px solid var(--danger);
+            border-radius: 10px;
+            padding: 10px 14px;
+            font-size: 13px;
+            line-height: 1.4;
+            color: var(--text);
+            z-index: 200;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+        }
+
         @media (prefers-reduced-motion: reduce) {
             .btn-icon,
             .btn-primary,
@@ -584,6 +602,8 @@
     </div>
 
     <div id="statusRegion" class="visually-hidden" aria-live="polite"></div>
+
+    <div id="errorBanner" class="error-banner" hidden role="alert"></div>
 
     <section id="debugPanel" class="debug-panel" hidden>
         <h2>Input diagnostics</h2>
@@ -913,6 +933,7 @@
         const successModal = document.getElementById('successModal');
         const playAgainBtn = document.getElementById('playAgainBtn');
         const statusRegion = document.getElementById('statusRegion');
+        const errorBanner = document.getElementById('errorBanner');
         const debugPanel = document.getElementById('debugPanel');
         const debugOutput = document.getElementById('debugOutput');
         const debugCopy = document.getElementById('debugCopy');
@@ -995,6 +1016,12 @@
 
         function announce(message) {
             statusRegion.textContent = message;
+        }
+
+        function showErrorBanner(message) {
+            if (!errorBanner || !errorBanner.hidden) return;
+            errorBanner.textContent = 'Maze Flow hit a problem: ' + message;
+            errorBanner.hidden = false;
         }
 
         // ============ GEOMETRY HELPERS (stateful) ============
@@ -1348,6 +1375,10 @@
         }
 
         function onPointerDown(e) {
+            beginGesture(e);
+        }
+
+        function beginGesture(e) {
             ensureAudio();
             if (currentState === STATE.WON || modalOpen) return;
             if (activePointerId !== null) return;
@@ -1396,7 +1427,15 @@
         }
 
         function onPointerMove(e) {
-            if (e.pointerId !== activePointerId) return;
+            if (e.pointerId !== activePointerId) {
+                // Some pen drivers/browsers deliver contact as pointermove with buttons held
+                // and no pointerdown. Start the route from the first such move instead.
+                if (activePointerId === null && currentState !== STATE.WON && !modalOpen &&
+                    e.buttons !== 0 && isPrimaryPointerAllowed(e.pointerType, e.isPrimary, e.button)) {
+                    beginGesture(e);
+                }
+                return;
+            }
             if (currentState !== STATE.DRAWING) return;
 
             const samples = coalescedSamples(e);
@@ -2014,7 +2053,18 @@
             }
         }
 
-        init();
+        window.addEventListener('error', function (ev) {
+            showErrorBanner((ev && ev.message) ? ev.message : 'An error occurred.');
+        });
+        window.addEventListener('unhandledrejection', function () {
+            showErrorBanner('An asynchronous error occurred.');
+        });
+
+        try {
+            init();
+        } catch (err) {
+            showErrorBanner((err && err.message) ? err.message : String(err));
+        }
 
         // ============ EXPOSED API (for tests / tooling) ============
         window.MazeFlow = {

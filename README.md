@@ -45,11 +45,16 @@ used only when Pointer Events are unavailable; the two paths are never active to
 
 - Mouse (left button only; right-click and context menu are ignored).
 - Stylus/pen (tip only; barrel buttons and eraser are ignored). Wacom and other
-  tablets work through the unified Pointer Events stream.
+  tablets work through the unified Pointer Events stream. As a fallback, a route also
+  starts from the first held-button `pointermove` if the browser/driver does not emit a
+  `pointerdown` for pen contact.
 - Single-touch (the primary touch only; extra fingers are ignored during a gesture).
 
 No driver or Windows Ink configuration is required as a workaround. Windows Ink should
 still be tested both on and off as part of the manual matrix below.
+
+If the page ever fails to start, an on-screen banner shows the underlying error (useful
+on managed machines where DevTools are not available to students).
 
 ## Testing
 
