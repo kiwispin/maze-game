@@ -59,6 +59,11 @@ on managed machines where DevTools are not available to students). When a press 
 rejected because it is not on the green circle, a short coaching hint explains how to
 start, so a "can't draw" situation is self-explanatory.
 
+A small build badge in the bottom-right corner shows the commit this page was built
+from (e.g. `build bb215af`). If the web version behaves differently from a local copy
+of the same file, compare the two badges: a different (or missing) build reference means
+a cache or proxy is serving a stale copy, not the maze code.
+
 ## Testing
 
 ### In-browser self-test

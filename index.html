@@ -482,6 +482,19 @@
             box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
         }
 
+        /* --- Build badge --- */
+        .build-badge {
+            position: fixed;
+            right: 8px;
+            bottom: 4px;
+            font-size: 10px;
+            line-height: 1;
+            color: rgba(0, 0, 0, 0.35);
+            z-index: 60;
+            pointer-events: none;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        }
+
         @media (prefers-reduced-motion: reduce) {
             .btn-icon,
             .btn-primary,
@@ -632,6 +645,8 @@
 
     <div id="errorBanner" class="error-banner" hidden role="alert"></div>
     <div id="coachToast" class="coach-toast" role="status"></div>
+    <div id="buildBadge" class="build-badge" aria-hidden="true"></div>
+
 
     <section id="debugPanel" class="debug-panel" hidden>
         <h2>Input diagnostics</h2>
@@ -669,7 +684,8 @@
             MAX_PATH_POINTS: 20000,
             DEBUG_BUFFER: 120,
             RESIZE_DEBOUNCE_MS: 200,
-            DIFFICULTIES: Object.freeze({ 15: 'Easy', 20: 'Medium', 30: 'Hard' })
+            DIFFICULTIES: Object.freeze({ 15: 'Easy', 20: 'Medium', 30: 'Hard' }),
+            BUILD: Object.freeze({ version: '1.0.0', ref: 'bb215af' })
         });
 
         const STATE = Object.freeze({
@@ -963,6 +979,7 @@
         const statusRegion = document.getElementById('statusRegion');
         const errorBanner = document.getElementById('errorBanner');
         const coachToast = document.getElementById('coachToast');
+        const buildBadge = document.getElementById('buildBadge');
         const debugPanel = document.getElementById('debugPanel');
         const debugOutput = document.getElementById('debugOutput');
         const debugCopy = document.getElementById('debugCopy');
@@ -1494,6 +1511,13 @@
             for (let i = 0; i < samples.length; i++) {
                 const s = samples[i];
                 const pos = clampSample(toLogical(s.clientX, s.clientY));
+                // Guard against malformed samples (e.g. an API returning out-of-range
+                // coordinates): drop anything clearly outside the logical playfield.
+                if (!isFinite(pos.x) || !isFinite(pos.y) ||
+                    pos.x < -logicalW || pos.x > logicalW * 2 ||
+                    pos.y < -logicalH || pos.y > logicalH * 2) {
+                    continue;
+                }
                 if (lastSample !== null && pos.x === lastSample.x && pos.y === lastSample.y) continue;
                 if (lastSample !== null && sweptCollide(lastSample, pos)) {
                     handleCollision(pos);
@@ -2128,6 +2152,9 @@
                 container.innerHTML = '<p role="alert">Your browser does not support 2D canvas drawing. ' +
                     'Please update your browser to play Maze Flow.</p>';
                 return;
+            }
+            if (buildBadge) {
+                buildBadge.textContent = 'build ' + CONFIG.BUILD.ref;
             }
             bindInput();
             bindControls();
