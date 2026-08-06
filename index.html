@@ -685,7 +685,7 @@
             DEBUG_BUFFER: 120,
             RESIZE_DEBOUNCE_MS: 200,
             DIFFICULTIES: Object.freeze({ 15: 'Easy', 20: 'Medium', 30: 'Hard' }),
-            BUILD: Object.freeze({ version: '1.0.0', ref: 'bb215af' })
+            BUILD: Object.freeze({ version: '1.0.0', ref: '56c708d' })
         });
 
         const STATE = Object.freeze({
@@ -2154,7 +2154,8 @@
                 return;
             }
             if (buildBadge) {
-                buildBadge.textContent = 'build ' + CONFIG.BUILD.ref;
+                const framed = (window.self !== window.top);
+                buildBadge.textContent = 'build ' + CONFIG.BUILD.ref + (framed ? ' · framed' : '');
             }
             bindInput();
             bindControls();
